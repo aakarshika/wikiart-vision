@@ -1,6 +1,7 @@
 from dotenv import load_dotenv, find_dotenv
 import os
 import pandas as pd
+from scipy.misc import imread, imsave, imresize
 
 load_dotenv(find_dotenv())
 
@@ -45,9 +46,21 @@ def create_dataset(df, genre_count, image_count, output_fname):
     topn.to_csv(os.path.join(os.getenv('dataset_location'), output_fname), sep=';', index=False)
 
 
+def explore(df):
+    print("Height & width")
+    for i in range(df.shape[0]):
+        f = df['Path'].iloc[i]
+        img = imread(f)
+        # shows the shape (h, w, channels)
+        print(img.dtype, img.shape)
+
+
 def main():
-    create_dataset(train_df, 10, 10, output_fname='train_sample.csv')
-    create_dataset(test_df, 10, 10, output_fname='test_sample.csv')
+    # create_dataset(train_df, 10, 10, output_fname='train_sample.csv')
+    # create_dataset(test_df, 10, 10, output_fname='test_sample.csv')
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')
+    explore(train_df)
+
 
 if __name__ == '__main__':
     main()

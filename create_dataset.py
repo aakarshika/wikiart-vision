@@ -58,8 +58,8 @@ def explore(df):
 def main():
     global train_df
     global test_df
-    create_dataset(train_df, 10, 5, output_fname='train_sample.csv')
-    create_dataset(test_df, 10, 5, output_fname='test_sample.csv')
+    create_dataset(train_df, 10, 10, output_fname='train_sample.csv')
+    create_dataset(test_df, 10, 10, output_fname='test_sample.csv')
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')
     explore(train_df)
 

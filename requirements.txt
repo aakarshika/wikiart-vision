@@ -3,7 +3,6 @@ cycler==0.10.0
 h5py==2.7.1
 html5lib==0.9999999
 joblib==0.11
-Keras==2.0.4
 Markdown==2.6.9
 matplotlib==2.0.1
 numpy==1.12.1
@@ -23,9 +22,6 @@ seaborn==0.7.1
 six==1.11.0
 sklearn==0.0
 statsmodels==0.8.0
-tensorflow==1.3.0
-tensorflow-tensorboard==0.1.7
-Theano==0.9.0
 torch-vision==0.1.6.dev0
 tqdm==4.11.2
 Werkzeug==0.12.2

@@ -58,3 +58,17 @@ Alternatively, sometimes sudo picks up the wrong Python path, so give it the Pyt
 For e.g.,
 
 `sudo /home/user/anaconda3/bin/python setup.py install`.
+
+
+Even after all this runs, sometimes your Python code may not find the right Python path where leargist is installed.
+
+In that case, copy the relevant .so file from pyleargist-2.0.5/build and copy it to your Python environment's site-packages. 
+That *might* work. 
+
+
+Now try to see if `leargist.color_gist()` is identifiable. Also, since the leargist library uses Pillow to read images, 
+newer versions of Pillow are incompatible with pyleargist.
+
+You want to install PIL < 3.0 - I have 2.7.0 and testing the `leargist.color_gist('ar.ppm')` was successful. 
+
+Instead of PPM images, png images are also working fine.

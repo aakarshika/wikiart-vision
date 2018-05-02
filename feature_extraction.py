@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 from PIL import Image
+import matplotlib.pyplot as plt
 load_dotenv(find_dotenv())
 
 HISTOGRAM_BINS = 10
@@ -48,24 +49,26 @@ class FeatureExtractor():
     def GIST(self):
         x = Image.open(self.path)
         descriptors = leargist.color_gist(x)
+        # plt.plot(descriptors)
+        # plt.show()
         return descriptors
 
 
 def main():
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')
 
-    train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
-    train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
-    train_df['Saturation'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).saturation())
-    train_df['ColorHist'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).color_histogram())
+    # train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
+    # train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
+    # train_df['Saturation'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).saturation())
+    # train_df['ColorHist'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).color_histogram())
     train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
 
     # just for understanding the structure of features - to be removed later
-    train_df['SIFTShape'] = train_df['SIFTDesc'].apply(lambda x: x.shape)
-    train_df['ColorHistShape'] = train_df['ColorHist'].apply(lambda x: x.shape)
-    train_df['BrightnessShape'] = train_df['Brightness'].apply(lambda x: x.shape)
-    train_df['SaturationShape'] = train_df['Saturation'].apply(lambda x: x.shape)
-    train_df['GISTShape'] = train_df['GISTDesc'].apply(lambda x:x.shape)
+    # train_df['SIFTShape'] = train_df['SIFTDesc'].apply(lambda x: x.shape)
+    # train_df['ColorHistShape'] = train_df['ColorHist'].apply(lambda x: x.shape)
+    # train_df['BrightnessShape'] = train_df['Brightness'].apply(lambda x: x.shape)
+    # train_df['SaturationShape'] = train_df['Saturation'].apply(lambda x: x.shape)
+    # train_df['GISTShape'] = train_df['GISTDesc'].apply(lambda x:x.shape)
     print(train_df.head(25))
 
 if __name__ == '__main__':

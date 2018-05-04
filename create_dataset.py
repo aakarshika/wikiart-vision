@@ -58,8 +58,12 @@ def explore(df):
 def main():
     global train_df
     global test_df
-    create_dataset(train_df, 10, 10, output_fname='train_sample.csv')
-    create_dataset(test_df, 10, 10, output_fname='test_sample.csv')
+
+    genre_count = 10
+    img_count = 100
+
+    create_dataset(train_df, genre_count, img_count, output_fname='train_{}.csv'.format(genre_count*img_count))
+    create_dataset(test_df, genre_count, img_count, output_fname='test_{}.csv'.format(genre_count*img_count))
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')
     explore(train_df)
 
@@ -67,4 +71,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-# main()

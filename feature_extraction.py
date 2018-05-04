@@ -6,9 +6,9 @@ import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 from PIL import Image
 import matplotlib.pyplot as plt
+from time import time
+from scipy.misc import imresize
 from scipy.signal import argrelextrema
-
-from sklearn.metrics.pairwise import pairwise_distances
 
 load_dotenv(find_dotenv())
 
@@ -20,9 +20,10 @@ class FeatureExtractor():
     def __init__(self, path):
         self.path = path
         self.img = cv2.imread(self.path)
-        self.yuv_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2YUV)
-        self.bw_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        self.hsv_img = cv2.cvtColor(self.img, cv2.COLOR_BGR2HSV)
+        self.img_small = imresize(self.img, (640, 640))
+        self.yuv_img = cv2.cvtColor(self.img_small, cv2.COLOR_BGR2YUV)
+        self.bw_img = cv2.cvtColor(self.img_small, cv2.COLOR_BGR2GRAY)
+        self.hsv_img = cv2.cvtColor(self.img_small, cv2.COLOR_BGR2HSV)
         self.bgr_hist = None
         self.hsv_hist = None
         self.yuv_hist = None
@@ -34,22 +35,20 @@ class FeatureExtractor():
         # decide what to do with these descriptors
 
     def histograms(self):
-        bhist = cv2.calcHist([self.img], [0], None, [HISTOGRAM_BINS], [0, 256])
-        ghist = cv2.calcHist([self.img], [1], None, [HISTOGRAM_BINS], [0, 256])
-        rhist = cv2.calcHist([self.img], [2], None, [HISTOGRAM_BINS], [0, 256])
-        self.bgr_hist = [bhist,ghist,rhist]
+        bhist = cv2.calcHist([self.img_small], [0], None, [HISTOGRAM_BINS], [0, 256])
+        ghist = cv2.calcHist([self.img_small], [1], None, [HISTOGRAM_BINS], [0, 256])
+        rhist = cv2.calcHist([self.img_small], [2], None, [HISTOGRAM_BINS], [0, 256])
+        self.bgr_hist = [bhist, ghist, rhist]
 
         hhist = cv2.calcHist([self.hsv_img], [0], None, [HISTOGRAM_BINS], [0, 256])
         shist = cv2.calcHist([self.hsv_img], [1], None, [HISTOGRAM_BINS], [0, 256])
         vhist = cv2.calcHist([self.hsv_img], [2], None, [HISTOGRAM_BINS], [0, 256])
-        self.hsv_hist = [hhist,shist,vhist]
+        self.hsv_hist = [hhist, shist, vhist]
 
         yhist = cv2.calcHist([self.yuv_img], [0], None, [HISTOGRAM_BINS], [0, 256])
         uhist = cv2.calcHist([self.yuv_img], [1], None, [HISTOGRAM_BINS], [0, 256])
         vhist = cv2.calcHist([self.yuv_img], [2], None, [HISTOGRAM_BINS], [0, 256])
-        self.yuv_hist = [yhist,uhist,vhist]
-
-
+        self.yuv_hist = [yhist, uhist, vhist]
         # print(self.bgr_hist)
 
     def brightness(self):
@@ -67,9 +66,9 @@ class FeatureExtractor():
         return hist
 
     def color_histogram(self):
-        bhist = cv2.calcHist([self.img], [0], None, [HISTOGRAM_BINS], [0, 256])
-        ghist = cv2.calcHist([self.img], [1], None, [HISTOGRAM_BINS], [0, 256])
-        rhist = cv2.calcHist([self.img], [2], None, [HISTOGRAM_BINS], [0, 256])
+        bhist = cv2.calcHist([self.img_small], [0], None, [HISTOGRAM_BINS], [0, 256])
+        ghist = cv2.calcHist([self.img_small], [1], None, [HISTOGRAM_BINS], [0, 256])
+        rhist = cv2.calcHist([self.img_small], [2], None, [HISTOGRAM_BINS], [0, 256])
         # self.histograms()
         # bhist = self.bgr_hist[0]
         # ghist = self.bgr_hist[1]
@@ -112,29 +111,31 @@ class FeatureExtractor():
         mb = np.mean(cv2.normalize(self.bgr_hist[0], None))
         mg = np.mean(cv2.normalize(self.bgr_hist[1], None))
         mr = np.mean(cv2.normalize(self.bgr_hist[2], None))
-        return [mh,ms,mv,my,mb,mg,mr]
+        return [mh, ms, mv, my, mb, mg, mr]
 
     def GIST(self):
         x = Image.open(self.path)
         descriptors = leargist.color_gist(x)
-        # plt.plot(descriptors)
-        # plt.show()
         return np.array(descriptors)
 
 
-
-
-
 def main():
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')
 
-    
-    # train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
-    # train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
-    # train_df['Saturation'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).saturation())
-    # train_df['ColorHist'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).color_histogram())
-    # train_df['means'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).mean_HSVYBGR())
+    start_time = time()
+
+    genre_count = int(os.getenv('genre_count'))
+    img_count = int(os.getenv('img_count'))
+
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
+
+    train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
+    train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
+    train_df['Saturation'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).saturation())
+    train_df['ColorHist'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).color_histogram())
     train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
+    train_df['LocalMaxima'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).pos_local_maxima_HSVYBGR())
+    train_df['LocalMinima'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).pos_local_minima_HSVYBGR())
+    train_df['Mean_HSVYBGR'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).mean_HSVYBGR())
 
     # just for understanding the structure of features - to be removed later
     # train_df['SIFTShape'] = train_df['SIFTDesc'].apply(lambda x: x.shape)
@@ -143,12 +144,26 @@ def main():
     # train_df['SaturationShape'] = train_df['Saturation'].apply(lambda x: x.shape)
     # train_df['GISTShape'] = train_df['GISTDesc'].apply(lambda x:x.shape)
 
-    # print(train_df.head(2))
-    
-    # train_df.toCSV? 
+    print(train_df.head(10))
+
+    tr = train_df.as_matrix()
+    np.save('temp/features_{}.npy'.format(genre_count*img_count), tr)
+
     # if df is saved to file, then it can be read in distance_features.py, else:
     x = train_df.as_matrix(columns=['GISTDesc'])
-    np.save('temp/GISTDesc.npy', x )
+    np.save('temp/GISTDesc_{}.npy'.format(img_count*genre_count), x)
+
+    print("Finished creating features in:", time()-start_time)
+
 
 if __name__ == '__main__':
     main()
+
+    # features = np.load('temp/features.npy')
+    # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
+    #                                               'ColorHist', 'GISTDesc', 'LocalMaxima',
+    #                                               'LocalMinima', 'Mean_HSVYBGR'])
+    #
+    # features_df['SIFTShape'] = features_df['SIFTDesc'].apply(lambda x: x.shape)
+    #
+    # print(features_df.head(5))

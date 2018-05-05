@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
 from PIL import Image
-import matplotlib.pyplot as plt
 from time import time
 from scipy.cluster.vq import *
 from scipy.misc import imresize
@@ -70,11 +69,6 @@ class FeatureExtractor():
         bhist = cv2.calcHist([self.img_small], [0], None, [HISTOGRAM_BINS], [0, 256])
         ghist = cv2.calcHist([self.img_small], [1], None, [HISTOGRAM_BINS], [0, 256])
         rhist = cv2.calcHist([self.img_small], [2], None, [HISTOGRAM_BINS], [0, 256])
-        # self.histograms()
-        # bhist = self.bgr_hist[0]
-        # ghist = self.bgr_hist[1]
-        # rhist = self.bgr_hist[2]
-
         bhist = np.transpose(bhist)[0]
         ghist = np.transpose(ghist)[0]
         rhist = np.transpose(rhist)[0]
@@ -142,9 +136,9 @@ class Features():
         vocab, variance = kmeans2(descriptor_pool, k)
         self.vocab = vocab
 
-    def createFeatures(self, vocab=None, test=True):
+    def createFeatures(self, vocab=None, test=False):
 
-        for i in range(self.df.shape[0] - 95):
+        for i in range(self.df.shape[0]):
             path = self.df['Path'].iloc[i]
 
             fe = FeatureExtractor(path=path)
@@ -156,6 +150,8 @@ class Features():
                             'ColorHist': fe.color_histogram(),
                             'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'GISTDesc': fe.GIST()}
+
+            self.image_data.append(img_features)
 
             if not test:
                 if self.sift_descriptor_pool is None:
@@ -171,27 +167,23 @@ class Features():
                 if self.vocab is None:
                     print("Started kMeans clustering")
                     self.clusterDescriptors(self.sift_descriptor_pool, self.KMEANS_CLUSTERS_FOR_SIFT)
-                else:
-                    self.vocab = vocab
 
-            self.image_data.append(img_features)
+        for i in self.image_data:
+            hist = self.createHistogram(i['SIFTDesc'], self.vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+            i['SIFTHist'] = hist
+            i['features'] = hist
 
-            for img in self.image_data:
-                hist = self.createHistogram(img['SIFTDesc'], self.vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
-                img['SIFTHist'] = hist
-                img['features'] = hist
+            i['features'] = np.append(i['features'], i['Brightness'])
+            i['features'] = np.append(i['features'], i['ColorHist'])
+            i['features'] = np.append(i['features'], i['Mean_HSVYBGR'])
+            i['features'] = np.append(i['features'], i['Saturation'])
 
-                img['features'] = np.append(img['features'], img['Brightness'])
-                img['features'] = np.append(img['features'], img['ColorHist'])
-                img['features'] = np.append(img['features'], img['Mean_HSVYBGR'])
-                img['features'] = np.append(img['features'], img['Saturation'])
+            if self.features is None:
+                self.features = i['features']
+            else:
+                self.features = np.vstack((self.features, i['features']))
 
-                if self.features is None:
-                    self.features = img['features']
-                else:
-                    self.features = np.vstack((self.features, img['features']))
-
-        return self.image_data, self.features, self.vocab
+        return self.vocab
 
 
 def main():
@@ -204,7 +196,9 @@ def main():
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
 
     f = Features(df=train_df)
-    _, train_features, vocab = f.createFeatures(train_df, test=False)
+    vocab = f.createFeatures(test=False)
+
+    print(f.features.shape)
 
     # train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
     # train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
@@ -226,8 +220,8 @@ def main():
     # print(train_df.head(10))
     #
     # tr = train_df.as_matrix()
-    # np.save('temp/features_{}.npy'.format(genre_count*img_count), tr)
-    #
+    np.save('temp/features_{}.npy'.format(genre_count*img_count), f.features)
+
     # # if df is saved to file, then it can be read in distance_features.py, else:
     # x = train_df.as_matrix(columns=['GISTDesc'])
     # np.save('temp/GISTDesc_{}.npy'.format(img_count*genre_count), x)

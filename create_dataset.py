@@ -60,7 +60,7 @@ def main():
     global test_df
 
     genre_count = 10
-    img_count = 100
+    img_count = 10
 
     create_dataset(train_df, genre_count, img_count, output_fname='train_{}.csv'.format(genre_count*img_count))
     create_dataset(test_df, genre_count, img_count, output_fname='test_{}.csv'.format(genre_count*img_count))

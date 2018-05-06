@@ -140,7 +140,7 @@ class Features():
 
     def createFeatures(self, vocab=None, test=False):
 
-        for i in tqdm(range(self.df.shape[0])):
+        for i in tqdm(range(self.df.shape[0]-90)):
             path = self.df['Path'].iloc[i]
 
             fe = FeatureExtractor(path=path)
@@ -152,8 +152,6 @@ class Features():
                             'ColorHist': fe.color_histogram(),
                             'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'GISTDesc': fe.GIST()}
-
-            self.image_data.append(img_features)
 
             if not test:
                 if self.sift_descriptor_pool is None:
@@ -172,25 +170,26 @@ class Features():
                 elif vocab is not None:
                     self.vocab = vocab
 
-            for im in tqdm(self.image_data):
-                # print(type(im['SIFTDesc']))
-                if not test:
-                    vocab = self.vocab
-                hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
-                im['SIFTHist'] = hist
-                im['features'] = hist
+            self.image_data.append(img_features)
 
-                im['features'] = np.append(im['features'], im['Brightness'])
-                im['features'] = np.append(im['features'], im['ColorHist'])
-                im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
-                im['features'] = np.append(im['features'], im['Saturation'])
+        for im in tqdm(self.image_data):
+            # print(type(im['SIFTDesc']))
+            if not test:
+                vocab = self.vocab
+            hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+            im['SIFTHist'] = hist
+            im['features'] = hist
 
-                if self.features is None:
-                    self.features = im['features']
-                else:
-                    self.features = np.vstack((self.features, im['features']))
+            im['features'] = np.append(im['features'], im['Brightness'])
+            im['features'] = np.append(im['features'], im['ColorHist'])
+            im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
+            im['features'] = np.append(im['features'], im['Saturation'])
 
-        self.image_data.append(img_features)
+            if self.features is None:
+                self.features = im['features']
+            else:
+                self.features = np.vstack((self.features, im['features']))
+
         vocab = self.vocab
         return vocab
 

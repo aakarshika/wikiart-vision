@@ -113,7 +113,7 @@ class FeatureExtractor():
     def GIST(self):
         x = Image.open(self.path)
         descriptors = leargist.color_gist(x)
-        return descriptors
+        return np.array(descriptors)
 
 
 class Features():
@@ -173,8 +173,7 @@ class Features():
                     self.vocab = vocab
 
             for im in tqdm(self.image_data):
-                print(type(im['SIFTDesc']))
-                hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+                hist = self.createHistogram(im['SIFTDesc'], self.vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
                 im['SIFTHist'] = hist
                 im['features'] = hist
 

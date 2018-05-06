@@ -173,23 +173,23 @@ class Features():
                 elif vocab is not None:
                     self.vocab = vocab
 
-            for im in tqdm(self.image_data):
-                # print(type(im['SIFTDesc']))
-                if not test:
-                    vocab = self.vocab
-                hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
-                im['SIFTHist'] = hist
-                im['features'] = hist
+        for im in tqdm(self.image_data):
+            # print(type(im['SIFTDesc']))
+            if not test:
+                vocab = self.vocab
+            hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+            im['SIFTHist'] = hist
+            im['features'] = hist
 
-                im['features'] = np.append(im['features'], im['Brightness'])
-                im['features'] = np.append(im['features'], im['ColorHist'])
-                im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
-                im['features'] = np.append(im['features'], im['Saturation'])
+            im['features'] = np.append(im['features'], im['Brightness'])
+            im['features'] = np.append(im['features'], im['ColorHist'])
+            im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
+            im['features'] = np.append(im['features'], im['Saturation'])
 
-                if self.features is None:
-                    self.features = im['features']
-                else:
-                    self.features = np.vstack((self.features, im['features']))
+            if self.features is None:
+                self.features = im['features']
+            else:
+                self.features = np.vstack((self.features, im['features']))
 
         vocab = self.vocab
         return vocab

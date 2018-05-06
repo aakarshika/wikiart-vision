@@ -62,6 +62,9 @@ def main():
     genre_count = int(os.getenv('genre_count'))
     img_count = int(os.getenv('sample_img_count'))
 
+    genre_count = 10
+    img_count = 100
+
     create_dataset(train_df, genre_count, img_count, output_fname='train_{}.csv'.format(genre_count*img_count))
     create_dataset(test_df, genre_count, img_count, output_fname='test_{}.csv'.format(genre_count*img_count))
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_sample.csv'), sep=';')

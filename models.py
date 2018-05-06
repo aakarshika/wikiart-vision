@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import *
 from sklearn import metrics
 from sklearn.feature_selection import *
-
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
@@ -18,6 +18,10 @@ genre_count = int(os.getenv('genre_count'))
 img_count = int(os.getenv('sample_img_count'))
 
 cross_val_folds = 5
+
+def gist_distance(x, y):
+    d = (x - y) * (x - y)
+    return np.sum(d)
 
 
 class Classifier():
@@ -31,13 +35,17 @@ class Classifier():
     def XGBoost(self):
         print("XGBoost")
     def KNN(self):
-        print("KNN")
+        return KNeighborsClassifier()
 
 class FeatureSelector():
     def SFM(self,clf):
         return SelectFromModel(clf)
     def SKB(self):
         return SelectKBest(chi2)
+
+class FeatureVectorSelector():
+    def selectTopN(self,clf,n):
+        print("Yo")
 
 def importance(rfc):
     importances = rfc.feature_importances_
@@ -67,39 +75,20 @@ def importance(rfc):
     plt.show()
 
 
+def model_1():
+    """ 
+    Feature Selection:
+        SelectFromModel(RandomForest) 
+    Classifiers: 
+        KNN 
+        RandomForestClassifier """
 
-def main():
-
-    genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
-
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_100.csv'), sep=';')
-
-    features = np.load('data/features_train_{}.npy'.format(100))
-
-
-    print(features[0])
-
-    print(train_df.shape)
-
-    # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
-    #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
-    #                                                    'LocalMinima', 'Mean_HSVYBGR'])
-
-    feature_cols = ['SIFTDesc', 'Brightness', 'Saturation', 'ColorHist', 'Mean_HSVYBGR', 'GISTDesc']
-    features_lens = [25 , 10 , 10 , 30, 8]
-
-    # X = features
-    X = features[0:100]
-    y = train_df['Class']
-    print(features)
     clf = Classifier()
     randomforest = clf.RFC()
+    knearest = clf.KNN()
 
     fs = FeatureSelector()
     sfm = fs.SFM(randomforest)
-    skb = fs.SKB()
-
 
 
     pipe = Pipeline(steps=[
@@ -108,50 +97,93 @@ def main():
         ])
 
     # just checking
-    K_BEST_ = [20,30,50]
-    
+    # K_BestSelect = [20,30,50]
+    K_Nearest_Neighboors = [5,10]
+    SELECT_FEATURES = [sfm]
+    CLASSIFY = [randomforest , knearest]
+
     param_grid = [
         {
-            'selectFeatures': [sfm]
+            'selectFeatures': SELECT_FEATURES,
+            'classify': [knearest],
+            'classify__n_neighbors': K_Nearest_Neighboors
         }
         ,
         {
-            'selectFeatures': [skb],
-            'selectFeatures__k': K_BEST_
+            'selectFeatures': SELECT_FEATURES,
+            'classify': [randomforest] 
         }
     ]
 
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=1, param_grid=param_grid)
-    grid.fit(X, y)
-    mean_scores = np.array(grid.cv_results_['mean_test_score'])
-    # mean_scores = mean_scores.max(axis=0)
-    print('SelectFromModel, Select20Best, Select30Best, Select50Best' )
-    print(mean_scores)
+    return grid
 
+def display_results(y_test, y_pred):
+    print(classification_report(y_test, y_pred))
+    cmat = confusion_matrix(y_test, y_pred, labels=range(genre_count))
+    print("Confusion Matrix:")
+    print(cmat)
+    print("Class-wise accuracy:")
+    print(cmat.diagonal()/cmat.sum(axis=1))
+    # print(grid.best_estimator_)
+
+    print("\n\n")
+
+def main():
+
+    genre_count = int(os.getenv('genre_count'))
+    img_count = int(os.getenv('sample_img_count'))
+    
+
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv').format(genre_count*img_count), sep=';')
+    features = np.load('data/features_train_{}.npy'.format(genre_count*img_count))
+    
+    features_GIST = np.load('data/GISTDesc_train_{}.npy'.format(genre_count*img_count))
+    features_GIST = np.concatenate(features_GIST.tolist(), axis=0)
+    
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
+    features_test = np.load('data/features_test_{}.npy'.format(genre_count*img_count))
+    
+    features_test_GIST = np.load('data/GISTDesc_test_{}.npy'.format(genre_count*img_count))
+    features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
 
     
-    # importance(randomforest)
+    print(features.shape)
+    print(features_GIST.shape)
+    print(train_df.shape)
 
-    # model = SelectFromModel(randomforest, prefit=True)
-    # X_new = model.transform(X=features)
+    # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
+    #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
+    #                                                    'LocalMinima', 'Mean_HSVYBGR'])
 
-    # scores = cross_val_score(pipe, X, y, cv=cross_val_folds)
-    # predicted = cross_val_predict(pipe, X, y, cv=cross_val_folds)
-    # m=metrics.accuracy_score(y, predicted)
-    # print(m)
+    feature_cols = ['SIFTDesc', 'Brightness', 'ColorHist', 'Mean_HSVYBGR','Saturation', 'GISTDesc']
+    features_lens = [25, 10, 30, 10, 8]
 
-
-
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
+    X = features
+    X_GIST = features_GIST
+    y = train_df['Class']
     y_test = test_df['Class']
-    features_test = np.load('data/features_test_{}.npy'.format(genre_count*img_count))
-    y_pred=grid.predict(features_test[:100])
 
-    print(y_pred)
 
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred, labels=range(genre_count)))
+    # Models:
 
+    grid = model_1()
+    grid.fit(X, y)
+    # mean_scores = np.array(grid.cv_results_['mean_test_score'])
+
+    y_pred=grid.predict(features_test)
+    print("General feature classification")
+    display_results(y_test, y_pred)
+
+
+    # GIST KNN:
+
+    KNN_GIST = Classifier().KNN()
+    KNN_GIST.fit(X_GIST , y)
+    y_pred_gist = KNN_GIST.predict(features_test_GIST)
+    
+    print("GIST KNN classification")
+    display_results(y_test, y_pred_gist)
 
 
 main()

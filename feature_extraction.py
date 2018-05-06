@@ -225,15 +225,6 @@ def generate_files(count):
     np.save('data/features_train_{}.npy'.format(count), f_train.features)
     np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
 
-    train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
-
-    x = train_df.as_matrix(columns=['GISTDesc'])
-    np.save('data/GISTDesc_train_{}.npy'.format(count), x)
-
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(count)),
-                          sep=';')
-    train_vocab = np.load('data/vocab_train_{}.npy'.format(count))
-
     f_test = Features(df=test_df)
     f_test.createFeatures(vocab=train_vocab, test=True)
     np.save('data/features_test_{}.npy'.format(count), f_test.features)

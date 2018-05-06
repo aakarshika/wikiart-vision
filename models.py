@@ -16,8 +16,6 @@ load_dotenv(find_dotenv())
 
 genre_count = int(os.getenv('genre_count'))
 img_count = int(os.getenv('sample_img_count'))
-# genre_count = 10
-# img_count = 10
 
 cross_val_folds = 5
 
@@ -75,10 +73,14 @@ def main():
     genre_count = int(os.getenv('genre_count'))
     img_count = int(os.getenv('sample_img_count'))
 
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_100.csv'), sep=';')
 
-    features = np.load('temp/features_{}.npy'.format(genre_count*img_count))
+    features = np.load('data/features_train_{}.npy'.format(100))
 
+
+    print(features[0])
+
+    print(train_df.shape)
 
     # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
     #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
@@ -87,9 +89,10 @@ def main():
     feature_cols = ['SIFTDesc', 'Brightness', 'Saturation', 'ColorHist', 'Mean_HSVYBGR', 'GISTDesc']
     features_lens = [25 , 10 , 10 , 30, 8]
 
-    X = features
+    # X = features
+    X = features[0:100]
     y = train_df['Class']
-
+    print(features)
     clf = Classifier()
     randomforest = clf.RFC()
 
@@ -110,7 +113,8 @@ def main():
     param_grid = [
         {
             'selectFeatures': [sfm]
-        },
+        }
+        ,
         {
             'selectFeatures': [skb],
             'selectFeatures__k': K_BEST_
@@ -138,14 +142,15 @@ def main():
 
 
 
-    # test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
-    # y_test = test_df['Class']
-    # features_test = np.load('temp/features_test_{}.npy'.format(genre_count*img_count))
-    # y_pred=grid.predict(features_test)
-    # print(y_pred)
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
+    y_test = test_df['Class']
+    features_test = np.load('data/features_test_{}.npy'.format(genre_count*img_count))
+    y_pred=grid.predict(features_test[:100])
 
-    # print(classification_report(y_test, y_pred))
-    # print(confusion_matrix(y_test, y_pred, labels=range(genre_count)))
+    print(y_pred)
+
+    print(classification_report(y_test, y_pred))
+    print(confusion_matrix(y_test, y_pred, labels=range(genre_count)))
 
 
 

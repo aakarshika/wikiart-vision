@@ -77,7 +77,7 @@ class FeatureExtractor():
         colorHist = np.append(bhist, [ghist, rhist])
         return colorHist
 
-    def pos_local_maxima_HSVYBGR(self):
+    def local_maxima_HSVYBGR(self):
         self.histograms()
         h_lm = argrelextrema(self.hsv_hist[0], np.greater)
         s_lm = argrelextrema(self.hsv_hist[1], np.greater)
@@ -88,7 +88,7 @@ class FeatureExtractor():
         r_lm = argrelextrema(self.bgr_hist[2], np.greater)
         return [h_lm, s_lm, v_lm, y_lm, b_lm, g_lm, r_lm]
     
-    def pos_local_minima_HSVYBGR(self):
+    def local_minima_HSVYBGR(self):
         self.histograms()
         h_lm = argrelextrema(self.hsv_hist[0], np.less)
         s_lm = argrelextrema(self.hsv_hist[1], np.less)
@@ -153,6 +153,8 @@ class Features():
                             'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'GISTDesc': fe.GIST()}
 
+            self.image_data.append(img_features)
+
             if not test:
                 if self.sift_descriptor_pool is None:
                     self.sift_descriptor_pool = img_features['SIFTDesc']
@@ -171,7 +173,10 @@ class Features():
                     self.vocab = vocab
 
             for im in tqdm(self.image_data):
-                hist = self.createHistogram(im['SIFTDesc'], self.vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+                # print(type(im['SIFTDesc']))
+                if not test:
+                    vocab = self.vocab
+                hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
                 im['SIFTHist'] = hist
                 im['features'] = hist
 
@@ -220,6 +225,13 @@ def generate_files(count):
     np.save('data/features_train_{}.npy'.format(count), f_train.features)
     np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
 
+    train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
+
+    x = train_df.as_matrix(columns=['GISTDesc'])
+    np.save('data/GISTDesc_train_{}.npy'.format(count), x)
+
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(count)),
+                          sep=';')
     train_vocab = np.load('data/vocab_train_{}.npy'.format(count))
 
     f_test = Features(df=test_df)

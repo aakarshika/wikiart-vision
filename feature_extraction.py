@@ -153,8 +153,6 @@ class Features():
                             'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'GISTDesc': fe.GIST()}
 
-            self.image_data.append(img_features)
-
             if not test:
                 if self.sift_descriptor_pool is None:
                     self.sift_descriptor_pool = img_features['SIFTDesc']
@@ -187,6 +185,7 @@ class Features():
                 else:
                     self.features = np.vstack((self.features, im['features']))
 
+        self.image_data.append(img_features)
         vocab = self.vocab
         return vocab
 

@@ -28,10 +28,11 @@ class FeatureExtractor():
         self.hsv_hist = None
         self.yuv_hist = None
 
-
     def SIFT(self):
         sift = cv2.xfeatures2d.SIFT_create()
         keypoints, descriptors = sift.detectAndCompute(self.bw_img, None)
+        if descriptors is None:
+            descriptors = np.zeros((0, 128))
         return descriptors
 
     def histograms(self):
@@ -183,48 +184,29 @@ class Features():
             else:
                 self.features = np.vstack((self.features, i['features']))
 
-        return self.vocab
-
 
 def main():
 
     start_time = time()
 
     genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
+    img_count = int(os.getenv('img_count'))
 
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
 
-    f = Features(df=train_df)
-    vocab = f.createFeatures(test=False)
+    # f = Features(df=train_df)
+    # f.createFeatures(test=False)
+    # print(f.features.shape)
 
-    print(f.features.shape)
+    f = Features(df=test_df)
+    f.createFeatures(test=True)
 
-    # train_df['SIFTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).SIFT())
-    # train_df['Brightness'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).brightness())
-    # train_df['Saturation'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).saturation())
-    # train_df['ColorHist'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).color_histogram())
-    # train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
-    # train_df['LocalMaxima'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).pos_local_maxima_HSVYBGR())
-    # train_df['LocalMinima'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).pos_local_minima_HSVYBGR())
-    # train_df['Mean_HSVYBGR'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).mean_HSVYBGR())
-    #
-    # # just for understanding the structure of features - to be removed later
-    # train_df['SIFTShape'] = train_df['SIFTDesc'].apply(lambda x: x.shape)
-    # train_df['ColorHistShape'] = train_df['ColorHist'].apply(lambda x: x.shape)
-    # train_df['BrightnessShape'] = train_df['Brightness'].apply(lambda x: x.shape)
-    # train_df['SaturationShape'] = train_df['Saturation'].apply(lambda x: x.shape)
-    # train_df['GISTShape'] = train_df['GISTDesc'].apply(lambda x:x.shape)
-    # train_df['Mean_HSVYBGRShape'] = train_df['Mean_HSVYBGR'].apply(lambda x: len(x))
-
-    # print(train_df.head(10))
-    #
-    # tr = train_df.as_matrix()
-    np.save('temp/features_{}.npy'.format(genre_count*img_count), f.features)
+    np.save('temp/features_test_{}.npy'.format(genre_count*img_count), f.features)
 
     # # if df is saved to file, then it can be read in distance_features.py, else:
-    # x = train_df.as_matrix(columns=['GISTDesc'])
-    # np.save('temp/GISTDesc_{}.npy'.format(img_count*genre_count), x)
+    x = test_df.as_matrix(columns=['GISTDesc'])
+    np.save('temp/GISTDesc_test_{}.npy'.format(img_count*genre_count), x)
 
     print("Finished creating features in:", time()-start_time)
 
@@ -232,11 +214,7 @@ def main():
 if __name__ == '__main__':
     main()
 
-    # features = np.load('temp/features.npy')
-    # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
-    #                                               'ColorHist', 'GISTDesc', 'LocalMaxima',
-    #                                               'LocalMinima', 'Mean_HSVYBGR'])
-    #
-    # features_df['SIFTShape'] = features_df['SIFTDesc'].apply(lambda x: x.shape)
-    #
-    # print(features_df.head(5))
+    columns = ['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation', 'ColorHist',
+             'GISTDesc', 'LocalMaxima', 'LocalMinima', 'Mean_HSVYBGR']
+
+

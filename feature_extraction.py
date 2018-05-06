@@ -113,7 +113,7 @@ class FeatureExtractor():
     def GIST(self):
         x = Image.open(self.path)
         descriptors = leargist.color_gist(x)
-        return descriptors
+        return np.array(descriptors)
 
 
 class Features():
@@ -129,7 +129,6 @@ class Features():
 
     def createHistogram(self, descriptor_list, voc, k):
         features = np.zeros(k, "float32")
-        # print(type(voc))
         words, distance = vq(descriptor_list, voc)
         for w in words:
             features[w] += 1
@@ -141,7 +140,7 @@ class Features():
 
     def createFeatures(self, vocab=None, test=False):
 
-        for i in tqdm(range(self.df.shape[0])):
+        for i in tqdm(range(self.df.shape[0]-90)):
             path = self.df['Path'].iloc[i]
 
             fe = FeatureExtractor(path=path)
@@ -153,8 +152,6 @@ class Features():
                             'ColorHist': fe.color_histogram(),
                             'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'GISTDesc': fe.GIST()}
-
-            self.image_data.append(img_features)
 
             if not test:
                 if self.sift_descriptor_pool is None:
@@ -172,6 +169,8 @@ class Features():
                     self.clusterDescriptors(self.sift_descriptor_pool, self.KMEANS_CLUSTERS_FOR_SIFT)
                 elif vocab is not None:
                     self.vocab = vocab
+
+            self.image_data.append(img_features)
 
         for im in tqdm(self.image_data):
             # print(type(im['SIFTDesc']))
@@ -215,27 +214,26 @@ def generate_files(count):
     :return: 
     """
 
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_100.csv'),
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(count)),
                            sep=';')
-    
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(count)),
+                          sep=';')
+
     f_train = Features(df=train_df)
     train_vocab = f_train.createFeatures()
-    
     np.save('data/features_train_{}.npy'.format(count), f_train.features)
     np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
 
-    train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
-    
-    x = train_df.as_matrix(columns=['GISTDesc'])
-    np.save('data/GISTDesc_train_{}.npy'.format(count), x)
-    
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(count)),
-                          sep=';')
-    train_vocab = np.load('data/vocab_train_{}.npy'.format(count))
     f_test = Features(df=test_df)
     f_test.createFeatures(vocab=train_vocab, test=True)
     np.save('data/features_test_{}.npy'.format(count), f_test.features)
+
+    train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
     test_df['GISTDesc'] = test_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
+
+    x = train_df.as_matrix(columns=['GISTDesc'])
+    np.save('data/GISTDesc_train_{}.npy'.format(count), x)
+
     y = test_df.as_matrix(columns=['GISTDesc'])
     np.save('data/GISTDesc_test_{}.npy'.format(count), y)
 

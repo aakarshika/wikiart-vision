@@ -140,7 +140,7 @@ class Features():
 
     def createFeatures(self, vocab=None, test=False):
 
-        for i in tqdm(range(self.df.shape[0]-90)):
+        for i in tqdm(range(self.df.shape[0])):
             path = self.df['Path'].iloc[i]
 
             fe = FeatureExtractor(path=path)
@@ -214,6 +214,8 @@ def generate_files(count):
     :return: 
     """
 
+    start = time()
+
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(count)),
                            sep=';')
     test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(count)),
@@ -222,11 +224,16 @@ def generate_files(count):
     f_train = Features(df=train_df)
     train_vocab = f_train.createFeatures()
     np.save('data/features_train_{}.npy'.format(count), f_train.features)
+    print("Saved train features")
+
     np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
+    print("Saved train vocab")
 
     f_test = Features(df=test_df)
     f_test.createFeatures(vocab=train_vocab, test=True)
     np.save('data/features_test_{}.npy'.format(count), f_test.features)
+
+    print("Saved test features")
 
     train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
     test_df['GISTDesc'] = test_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
@@ -234,12 +241,17 @@ def generate_files(count):
     x = train_df.as_matrix(columns=['GISTDesc'])
     np.save('data/GISTDesc_train_{}.npy'.format(count), x)
 
+    print("Saved GIST for train")
+
     y = test_df.as_matrix(columns=['GISTDesc'])
     np.save('data/GISTDesc_test_{}.npy'.format(count), y)
 
+    print("Saved GIST for test")
+
+    print("Elapsed time: ", time()-start)
 
 if __name__ == '__main__':
     columns = ['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation', 'ColorHist',
              'GISTDesc', 'LocalMaxima', 'LocalMinima', 'Mean_HSVYBGR']
 
-    generate_files(100)
+    generate_files(1000)

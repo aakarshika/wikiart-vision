@@ -1,3 +1,4 @@
+
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import pandas as pd
@@ -11,6 +12,10 @@ from sklearn.feature_selection import *
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
+
+from xgboost import XGBClassifier
+import warnings
+warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
 
 load_dotenv(find_dotenv())
 
@@ -47,32 +52,32 @@ class FeatureVectorSelector():
     def selectTopN(self,clf,n):
         print("Yo")
 
-def importance(rfc):
-    importances = rfc.feature_importances_
-    # importances = pipe.named_steps.randomTree.feature_importances_
+# def importance(rfc):
+#     importances = rfc.feature_importances_
+#     # importances = pipe.named_steps.randomTree.feature_importances_
 
-    print(importances)
+#     print(importances)
 
-    # std = np.std([tree.feature_importances_ for tree in rfc.estimators_],
-    #              axis=0)
-    indices = np.argsort(importances)[::-1]
+#     # std = np.std([tree.feature_importances_ for tree in rfc.estimators_],
+#     #              axis=0)
+#     indices = np.argsort(importances)[::-1]
 
-    # Print the feature ranking
-    print("Feature ranking:")
+#     # Print the feature ranking
+#     print("Feature ranking:")
 
-    for f in range(X.shape[1]):
-        print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]])  )
+#     for f in range(X.shape[1]):
+#         print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]])  )
 
-    # Plot the feature importances of the forest
-    plt.figure()
-    plt.title("Feature importances")
-    plt.bar(range(X.shape[1]), importances[indices],
-           color="r"
-           # , yerr=std[indices]
-            ,align="center")
-    plt.xticks(range(X.shape[1]), indices)
-    plt.xlim([-1, X.shape[1]])
-    plt.show()
+#     # Plot the feature importances of the forest
+#     plt.figure()
+#     plt.title("Feature importances")
+#     plt.bar(range(X.shape[1]), importances[indices],
+#            color="r"
+#            # , yerr=std[indices]
+#             ,align="center")
+#     plt.xticks(range(X.shape[1]), indices)
+#     plt.xlim([-1, X.shape[1]])
+#     plt.show()
 
 
 def model_1():
@@ -118,6 +123,31 @@ def model_1():
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=1, param_grid=param_grid)
     return grid
 
+def XGB_model2():
+    # A parameter grid for XGBoost
+    params = {
+        'min_child_weight': [1, 5, 10],
+        'gamma': [0.5, 1, 1.5, 2, 5],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0],
+        'max_depth': [3, 4, 5]
+        }
+    xgb = XGBClassifier(
+        learning_rate=0.02, 
+        n_estimators=10, 
+        objective='multi:softmax',
+        silent=True, 
+        nthread=1)
+    random_search = RandomizedSearchCV(xgb, 
+        param_distributions=params,
+        n_iter=5, 
+        # scoring='roc_auc', 
+        n_jobs=4, 
+        cv=cross_val_folds, 
+        verbose=-1, 
+        random_state=1001 )
+    return random_search
+
 def display_results(y_test, y_pred):
     print(classification_report(y_test, y_pred))
     cmat = confusion_matrix(y_test, y_pred, labels=range(genre_count))
@@ -128,6 +158,9 @@ def display_results(y_test, y_pred):
     # print(grid.best_estimator_)
 
     print("\n\n")
+
+
+
 
 def main():
 
@@ -167,6 +200,7 @@ def main():
 
     # Models:
 
+    #### General ####
     grid = model_1()
     grid.fit(X, y)
     # mean_scores = np.array(grid.cv_results_['mean_test_score'])
@@ -176,12 +210,22 @@ def main():
     display_results(y_test, y_pred)
 
 
-    # GIST KNN:
+    #### XGBoost ####
+    grid = XGB_model2()
+    # y_bin = label_binarize(y, classes=[0,1,2,3,4,5,6,7,8,9])
+    grid.fit(X, y)
 
+    y_pred=grid.predict(features_test)
+    print("XGBoost classification")
+    display_results(y_test, y_pred)
+
+
+    
+    #### GIST KNN ####
     KNN_GIST = Classifier().KNN()
     KNN_GIST.fit(X_GIST , y)
+
     y_pred_gist = KNN_GIST.predict(features_test_GIST)
-    
     print("GIST KNN classification")
     display_results(y_test, y_pred_gist)
 

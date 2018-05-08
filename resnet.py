@@ -56,6 +56,7 @@ def main(learning_rate, epochs=100):
     train_size = 1000
     test_size = 1000
     pickle_path = os.getenv('pickle_path')
+    n_classes = os.getenv('genre_count')
 
     print("Train path:", train_path)
     print("Test path:", test_path)
@@ -117,9 +118,14 @@ def main(learning_rate, epochs=100):
     print('Finished Training')
     save_checkpoint({'epoch': epochs, 'arch': 'resnet18_re', 'state_dict': net.state_dict(), 'model': net})
 
+    # net, state = load_model('models/resnet18_re_checkpoint.pth.tar')
+
     print("Predicting on the test set... ")
-    class_correct = list(0. for i in range(10))
-    class_total = list(0. for i in range(10))
+    class_correct = [i for i in range(n_classes)]
+    class_total = [100] * n_classes
+
+    print(class_correct, class_total)
+
     y_pred = []
     y_actual = []
 

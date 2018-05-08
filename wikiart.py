@@ -16,7 +16,7 @@ class WikiartDataset(data_utils.Dataset):
         self.num_samples = config['size']
         self.ids_list = list(range(1, self.num_samples+1))
         self.arch = config.get('arch')
-        self.train = True
+        self.train = config['train']
         # random.shuffle(self.ids_list)
 
     def __getitem__(self, index):

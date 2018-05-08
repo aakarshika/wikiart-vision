@@ -50,22 +50,29 @@ def main(learning_rate, epochs=100):
 
     train_path = os.getenv('train_path')
     test_path = os.getenv('test_path')
-    images_path = os.getenv('dataset_location')
+    train_images_path = os.getenv('train_aws_dataset')
+    test_images_path = os.getenv('test_aws_dataset')
     bs = int(os.getenv('bs'))
     train_size = 1000
     test_size = 1000
     pickle_path = os.getenv('pickle_path')
 
-    wiki_train = WikiartDataset(config={'wikiart_path': train_path, 'images_path': images_path, 'size': train_size,
-                                        'arch': 'resnet'})
+    print("Train path:", train_path)
+    print("Test path:", test_path)
+    print("Train images path:", train_images_path)
+    print("Test images path", test_images_path)
+
+    print("Loading train data....")
+    wiki_train = WikiartDataset(config={'wikiart_path': train_path, 'images_path': train_images_path, 'size': train_size,
+                                        'arch': 'resnet', 'train': True})
 
     print("Loading test data....")
-    wiki_test = WikiartDataset(config={'wikiart_path': test_path, 'images_path': images_path, 'size': test_size,
-                                       'arch': 'resnet'})
+    wiki_test = WikiartDataset(config={'wikiart_path': test_path, 'images_path': test_images_path, 'size': test_size,
+                                       'arch': 'resnet', 'train': False})
 
-    wiki_train_dataloader = data_utils.DataLoader(wiki_train, batch_size=bs, shuffle=True, num_workers=2,
+    wiki_train_dataloader = data_utils.DataLoader(wiki_train, batch_size=bs, shuffle=True, num_workers=4,
                                                   drop_last=False)
-    wiki_test_dataloader = data_utils.DataLoader(wiki_test, batch_size=bs, shuffle=True, num_workers=2,
+    wiki_test_dataloader = data_utils.DataLoader(wiki_test, batch_size=bs, shuffle=True, num_workers=4,
                                                  drop_last=False)
 
     # net = _classifier(pretrained_model=resnet18(pretrained=True), n_classes=15)

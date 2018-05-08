@@ -45,7 +45,7 @@ def load_model(path):
     return net, state
 
 
-def main(learning_rate, epochs=100):
+def main(learning_rate, epochs=20):
     print("Loading training data....")
 
     train_path = os.getenv('train_path')
@@ -172,4 +172,4 @@ if __name__ == '__main__':
     #     print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
     #     main(learning_rate=c[0], epochs=c[1])
 
-    main(learning_rate=0.001, epochs=100)
+    main(learning_rate=0.001, epochs=20)

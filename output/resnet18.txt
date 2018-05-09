@@ -1,0 +1,27 @@
+1000 images in train and test.
+
+Console Output:
+
+Learning rate: 0.001, epochs = 20
+
+Loading training data....
+Train path: /home/wikiart/train_aws_1000.csv
+Test path: /home/wikiart/test_aws_1000.csv
+Train images path: /home/wikiart/train_wikiart682
+Test images path /home/wikiart/test_wikiart682
+Loading train data....
+Loading test data....
+Predicting on the test set...
+Correct classes [tensor(54, dtype=torch.uint8), tensor(28, dtype=torch.uint8), tensor(36, dtype=torch.uint8), tensor(66, dtype=torch.uint8), tensor(14, dtype=torch.uint8), tensor(65, dtype=torch.uint8), tensor(37, dtype=torch.uint8), tensor(32, dtype=torch.uint8), tensor(35, dtype=torch.uint8), tensor(57, dtype=torch.uint8)]
+Total count for each class [100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+Pickling predictions and labels
+Accuracy of abstract_painting : 54 %
+Accuracy of cityscape : 28 %
+Accuracy of genre_painting : 36 %
+Accuracy of illustration : 66 %
+Accuracy of landscape : 14 %
+Accuracy of nude_painting : 65 %
+Accuracy of portrait : 37 %
+Accuracy of religious_painting : 32 %
+Accuracy of sketch_and_study : 35 %
+Accuracy of still_life : 57 %

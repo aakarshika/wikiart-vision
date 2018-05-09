@@ -10,6 +10,7 @@ from dotenv import load_dotenv, find_dotenv
 import pickle
 from wikiart import WikiartDataset
 import os
+from time import time
 
 load_dotenv(find_dotenv())
 
@@ -33,8 +34,10 @@ class _classifier(nn.Module):
         return y
 
 
-def save_checkpoint(state, path='models/', filename='resnet18_re_checkpoint.pth.tar'):
-    torch.save(state, path+filename)
+def save_checkpoint(state, learning_rate, epochs, path='models/', filename='resnet18_{}_{}_checkpoint.pth.tar'):
+    fname = (path+filename).format(learning_rate, epochs)
+    torch.save(state, fname)
+    return fname
 
 
 def load_model(path):
@@ -87,37 +90,38 @@ def main(learning_rate, epochs=20):
 
     # Train
 
-    # for epoch in range(epochs):
-    #     print("Epoch: ", epoch)
-    #     running_loss = 0.0
-    #
-    #     for i, data in enumerate(wiki_train_dataloader, 0):
-    #         inputs, labels = data['image'], data['class']
-    #         batchsize = inputs.shape[0]
-    #         # make this 4, 32, 32, 3 -> 4, 3, 32, 32
-    #         inputs = inputs.view(batchsize, 3, 224, 224)
-    #
-    #         inputs, labels = Variable(inputs), Variable(labels)
-    #         optimizer.zero_grad()
-    #
-    #         # forward + backward + optimize
-    #         outputs = net(inputs)
-    #
-    #         loss = criterion(outputs, labels)
-    #         loss.backward()
-    #         optimizer.step()
-    #
-    #         # print statistics
-    #         running_loss += loss.data[0]
-    #         if i % 50 == 49:  # print every 50 mini-batches
-    #             print('[%d, %5d] loss: %.3f' %
-    #                   (epoch + 1, i + 1, running_loss / 2000))
-    #             running_loss = 0.0
-    #
-    # print('Finished Training')
-    # save_checkpoint({'epoch': epochs, 'arch': 'resnet18_re', 'state_dict': net.state_dict(), 'model': net})
+    for epoch in range(epochs):
+        print("Epoch: ", epoch)
+        running_loss = 0.0
 
-    net, state = load_model('models/resnet18_re_checkpoint.pth.tar')
+        for i, data in enumerate(wiki_train_dataloader, 0):
+            inputs, labels = data['image'], data['class']
+            batchsize = inputs.shape[0]
+            # make this 4, 32, 32, 3 -> 4, 3, 32, 32
+            inputs = inputs.view(batchsize, 3, 224, 224)
+
+            inputs, labels = Variable(inputs), Variable(labels)
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = net(inputs)
+
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            # print statistics
+            running_loss += loss.data[0]
+            if i % 50 == 49:  # print every 50 mini-batches
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / 2000))
+                running_loss = 0.0
+
+    print('Finished Training')
+    loc = save_checkpoint({'epoch': epochs, 'arch': 'resnet18_re', 'state_dict': net.state_dict(), 'model': net},
+                          learning_rate=learning_rate, epochs=epochs)
+
+    net, state = load_model(loc)
 
     print("Predicting on the test set... ")
     class_correct = [i for i in range(n_classes)]
@@ -157,15 +161,17 @@ def main(learning_rate, epochs=20):
         print('Accuracy of %5s : %2d %%' % (
             genres[i], float(class_correct[i].item() * 100)/ class_total[i]))
 
+
+
+
+
 if __name__ == '__main__':
 
     lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-    epochs = [100]
+    epochs = [20]
 
     combinations = list(itertools.product(lrs, epochs))
 
-    # for c in combinations:
-    #     print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
-    #     main(learning_rate=c[0], epochs=c[1])
-
-    main(learning_rate=0.001, epochs=20)
+    for c in combinations:
+        print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
+        main(learning_rate=c[0], epochs=c[1])

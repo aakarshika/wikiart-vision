@@ -18,8 +18,7 @@ def get_classes(filepath):
     data = pd.read_csv(filepath, sep=',')
     return list(data['Genre'].unique()), list(data['Class'].unique())
 
-artists, classes = get_classes(os.getenv('mappings'))
-
+genres, classes = get_classes(os.getenv('mappings'))
 
 class _classifier(nn.Module):
     def __init__(self, pretrained_model, n_classes):
@@ -140,7 +139,6 @@ def main(learning_rate, epochs=20):
             y_actual.append(label)
             class_correct[label] += c[i]
             y_pred.append(c[i])
-            class_total[label] += 1
 
     print("Correct classes", class_correct)
     print("Total count for each class", class_total)
@@ -157,7 +155,7 @@ def main(learning_rate, epochs=20):
 
     for i in range(len(classes)):
         print('Accuracy of %5s : %2d %%' % (
-            artists[i], 100 * class_correct[i] / class_total[i]))
+            genres[i], float(class_correct[i].item() * 100)/ class_total[i]))
 
 if __name__ == '__main__':
 

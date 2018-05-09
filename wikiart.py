@@ -16,16 +16,18 @@ class WikiartDataset(data_utils.Dataset):
         self.num_samples = config['size']
         self.ids_list = list(range(1, self.num_samples+1))
         self.arch = config.get('arch')
-        self.train = True
+        self.train = config.get('train')
         # random.shuffle(self.ids_list)
 
     def __getitem__(self, index):
         dataset = pd.read_csv(self.wikiart_path, sep=',')
         row = dataset.iloc[index]
         if self.train is True:
-            image = Image.open(os.getenv('train_aws_dataset')+"/"+row['Path'])
+            path = os.getenv('train_aws_dataset') + "/" + row['Path']
+            image = Image.open(path)
         else:
-            image = Image.open(os.getenv('test_aws_dataset')+"/"+row['Path'])
+            path = os.getenv('test_aws_dataset') + "/" + row['Path']
+            image = Image.open(path)
         if self.arch == 'cnn':
             image = image.resize((32, 32))
         else:

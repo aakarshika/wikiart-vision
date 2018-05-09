@@ -56,7 +56,7 @@ def main(learning_rate, epochs=20):
     train_size = 1000
     test_size = 1000
     pickle_path = os.getenv('pickle_path')
-    n_classes = os.getenv('genre_count')
+    n_classes = int(os.getenv('genre_count'))
 
     print("Train path:", train_path)
     print("Test path:", test_path)
@@ -88,43 +88,41 @@ def main(learning_rate, epochs=20):
 
     # Train
 
-    for epoch in range(epochs):
-        print("Epoch: ", epoch)
-        running_loss = 0.0
+    # for epoch in range(epochs):
+    #     print("Epoch: ", epoch)
+    #     running_loss = 0.0
+    #
+    #     for i, data in enumerate(wiki_train_dataloader, 0):
+    #         inputs, labels = data['image'], data['class']
+    #         batchsize = inputs.shape[0]
+    #         # make this 4, 32, 32, 3 -> 4, 3, 32, 32
+    #         inputs = inputs.view(batchsize, 3, 224, 224)
+    #
+    #         inputs, labels = Variable(inputs), Variable(labels)
+    #         optimizer.zero_grad()
+    #
+    #         # forward + backward + optimize
+    #         outputs = net(inputs)
+    #
+    #         loss = criterion(outputs, labels)
+    #         loss.backward()
+    #         optimizer.step()
+    #
+    #         # print statistics
+    #         running_loss += loss.data[0]
+    #         if i % 50 == 49:  # print every 50 mini-batches
+    #             print('[%d, %5d] loss: %.3f' %
+    #                   (epoch + 1, i + 1, running_loss / 2000))
+    #             running_loss = 0.0
+    #
+    # print('Finished Training')
+    # save_checkpoint({'epoch': epochs, 'arch': 'resnet18_re', 'state_dict': net.state_dict(), 'model': net})
 
-        for i, data in enumerate(wiki_train_dataloader, 0):
-            inputs, labels = data['image'], data['class']
-            batchsize = inputs.shape[0]
-            # make this 4, 32, 32, 3 -> 4, 3, 32, 32
-            inputs = inputs.view(batchsize, 3, 224, 224)
-
-            inputs, labels = Variable(inputs), Variable(labels)
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = net(inputs)
-
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            # print statistics
-            running_loss += loss.data[0]
-            if i % 50 == 49:  # print every 50 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
-
-    print('Finished Training')
-    save_checkpoint({'epoch': epochs, 'arch': 'resnet18_re', 'state_dict': net.state_dict(), 'model': net})
-
-    # net, state = load_model('models/resnet18_re_checkpoint.pth.tar')
+    net, state = load_model('models/resnet18_re_checkpoint.pth.tar')
 
     print("Predicting on the test set... ")
     class_correct = [i for i in range(n_classes)]
     class_total = [100] * n_classes
-
-    print(class_correct, class_total)
 
     y_pred = []
     y_actual = []

@@ -77,28 +77,6 @@ class FeatureExtractor():
         colorHist = np.append(bhist, [ghist, rhist])
         return colorHist
 
-    def local_maxima_HSVYBGR(self):
-        self.histograms()
-        h_lm = argrelextrema(self.hsv_hist[0], np.greater)
-        s_lm = argrelextrema(self.hsv_hist[1], np.greater)
-        v_lm = argrelextrema(self.hsv_hist[2], np.greater)
-        y_lm = argrelextrema(self.yuv_hist[0], np.greater)
-        b_lm = argrelextrema(self.bgr_hist[0], np.greater)
-        g_lm = argrelextrema(self.bgr_hist[1], np.greater)
-        r_lm = argrelextrema(self.bgr_hist[2], np.greater)
-        return [h_lm, s_lm, v_lm, y_lm, b_lm, g_lm, r_lm]
-    
-    def local_minima_HSVYBGR(self):
-        self.histograms()
-        h_lm = argrelextrema(self.hsv_hist[0], np.less)
-        s_lm = argrelextrema(self.hsv_hist[1], np.less)
-        v_lm = argrelextrema(self.hsv_hist[2], np.less)
-        y_lm = argrelextrema(self.yuv_hist[0], np.less)
-        b_lm = argrelextrema(self.bgr_hist[0], np.less)
-        g_lm = argrelextrema(self.bgr_hist[1], np.less)
-        r_lm = argrelextrema(self.bgr_hist[2], np.less)
-        return [h_lm, s_lm, v_lm, y_lm, b_lm, g_lm, r_lm]
-    
     def mean_HSVYBGR(self):
         self.histograms()
         mh = np.mean(cv2.normalize(self.hsv_hist[0], None))
@@ -173,7 +151,6 @@ class Features():
             self.image_data.append(img_features)
 
         for im in tqdm(self.image_data):
-            # print(type(im['SIFTDesc']))
             if not test:
                 vocab = self.vocab
             hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
@@ -196,15 +173,11 @@ class Features():
 
 def main():
 
-    start_time = time()
-
     genre_count = int(os.getenv('genre_count'))
     img_count = int(os.getenv('sample_img_count'))
 
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
     test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
-
-    print("Finished creating features in:", time()-start_time)
 
 
 def generate_files(count):

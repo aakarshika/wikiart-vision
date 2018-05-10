@@ -112,7 +112,7 @@ def main(learning_rate, epochs=20):
 
             # print statistics
             running_loss += loss.data[0]
-            if i % 50 == 49:  # print every 50 mini-batches
+            if i % 10 == 0:  # print every 50 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
@@ -125,10 +125,10 @@ def main(learning_rate, epochs=20):
 
     print("Predicting on the test set... ")
     class_correct = [i for i in range(n_classes)]
-    class_total = [100] * n_classes
+    class_total = [0] * n_classes
 
-    y_pred = []
-    y_actual = []
+    pred = []
+    actual = []
 
     for data in wiki_test_dataloader:
         images, labels = data['image'], data['class']
@@ -138,28 +138,32 @@ def main(learning_rate, epochs=20):
         _, predicted = torch.max(outputs.data, 1)
         c = (predicted == labels).squeeze()
 
+        pred.extend(predicted.numpy())
+        actual.extend(labels.numpy())
+
         for i in range(batchsize):
-            label = labels[0]
-            y_actual.append(label)
-            class_correct[label] += c[i]
-            y_pred.append(c[i])
+            label = labels[i]
+            class_correct[label] += c[i].item()
+            class_total[label] += 1
 
     print("Correct classes", class_correct)
     print("Total count for each class", class_total)
 
-    print("Pickling predictions and labels")
-    pkl1_name = "rnet18_re_ypred_{}_{}.pkl".format(learning_rate, epochs)
-    pkl2_name = "rnet18_re_y_actual_{}_{}.pkl".format(learning_rate, epochs)
+    print(len(pred), pred[0])
 
-    with open(pickle_path + pkl1_name, 'wb') as f:
-        pickle.dump(y_pred, f)
+    # print("Pickling predictions and labels")
+    # pkl1_name = "rnet18_re_ypred_{}_{}.pkl".format(learning_rate, epochs)
+    # pkl2_name = "rnet18_re_y_actual_{}_{}.pkl".format(learning_rate, epochs)
 
-    with open(pickle_path + pkl2_name, 'wb') as f2:
-        pickle.dump(y_actual, f2)
+    # with open(pickle_path + pkl1_name, 'wb') as f:
+    #     pickle.dump(y_pred, f)
+    #
+    # with open(pickle_path + pkl2_name, 'wb') as f2:
+    #     pickle.dump(y_actual, f2)
 
     for i in range(len(classes)):
         print('Accuracy of %5s : %2d %%' % (
-            genres[i], float(class_correct[i].item() * 100)/ class_total[i]))
+            genres[i], float(class_correct[i] * 100)/ class_total[i]))
 
 
 if __name__ == '__main__':
@@ -169,6 +173,8 @@ if __name__ == '__main__':
 
     combinations = list(itertools.product(lrs, epochs))
 
-    for c in combinations:
-        print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
-        main(learning_rate=c[0], epochs=c[1])
+    # for c in combinations:
+    #     print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
+    #     main(learning_rate=c[0], epochs=c[1])
+
+    main(learning_rate=0.01, epochs=1)

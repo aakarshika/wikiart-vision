@@ -220,32 +220,44 @@ def mega_combo_model(xgb_params):
 
     # just checking
     # K_BestSelect = [20,30,50]
-    K_Nearest_Neighboors = [5,10]
-    SELECT_FEATURES = [fvs]
+    K_Nearest_Neighboors = [5]
+    SELECT_FEATURES = [
+                    fvs(0), 
+                    fvs(1), 
+                    fvs(2), 
+                    fvs(3), 
+                    fvs(4), 
+                    fvs(5), 
+                    fvs(6), 
+                    fvs(7), 
+                    fvs(8), 
+                    fvs(9), 
+                    fvs(10),
+                    fvs(11),
+                    fvs(12)]
     CLASSIFY = [randomforest , knearest]
 
     param_grid = [
-        {
-            'selectFeatures': SELECT_FEATURES,
-            'selectFeatures__ftii': [0,1,2,3],
-            'classify': [knearest],
-            'classify__n_neighbors': K_Nearest_Neighboors
-        }
-        ,
+        # {
+        #     'selectFeatures': SELECT_FEATURES,
+        #     'classify': [knearest],
+        #     'classify__n_neighbors': K_Nearest_Neighboors
+        # }
+        # ,
         {
             'selectFeatures': SELECT_FEATURES,
             'classify': [randomforest] 
         }
-        ,
-        {
-            'selectFeatures':SELECT_FEATURES,
-            'classify': [xgb],
-            'classify__min_child_weight': [xgb_params['min_child_weight']],
-            'classify__gamma': [xgb_params['gamma']],
-            'classify__subsample': [xgb_params['subsample']],
-            'classify__colsample_bytree': [xgb_params['colsample_bytree']],
-            'classify__max_depth': [xgb_params['max_depth']]
-        }
+        # ,
+        # {
+        #     'selectFeatures':SELECT_FEATURES,
+        #     'classify': [xgb],
+        #     'classify__min_child_weight': [xgb_params['0min_child_weight']],
+        #     'classify__gamma': [xgb_params['gamma']],
+        #     'classify__subsample': [xgb_params['subsample']],
+        #     'classify__colsample_bytree': [xgb_params['colsample_bytree']],
+        #     'classify__max_depth': [xgb_params['max_depth']]
+        # }
     ]
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=4, param_grid=param_grid)
     return grid
@@ -254,8 +266,8 @@ def mega_combo_model(xgb_params):
 def main():
 
     genre_count = int(os.getenv('genre_count'))
-    # img_count = int(os.getenv('img_count'))
-    img_count = int(os.getenv('sample_img_count'))
+    img_count = int(os.getenv('img_count'))
+    # img_count = int(os.getenv('sample_img_count'))
     
 
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv').format(genre_count*img_count), sep=';')
@@ -271,9 +283,9 @@ def main():
     features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
 
     
-    print(features.shape)
-    print(features_GIST.shape)
-    print(train_df.shape)
+    # print(features.shape)
+    # print(features_GIST.shape)
+    # print(train_df.shape)
 
     # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
     #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
@@ -285,12 +297,12 @@ def main():
     X = features
     X_GIST = features_GIST
     X_all = np.concatenate((X, X_GIST), axis=1)
-    print(X_all.shape)
+    # print(X_all.shape)
 
     O = features_test
     O_GIST = features_test_GIST
     O_all = np.concatenate((O, O_GIST), axis=1)
-    print(O_all.shape)
+    # print(O_all.shape)
 
     y = train_df['Class']
     y_test = test_df['Class']
@@ -323,8 +335,12 @@ def main():
     y_pred=grid.predict(features_test)
 
     print("Combo classification")
-    # mean_scores = np.array(grid.cv_results_['mean_test_score'])
+    mean_scores = np.array(grid.cv_results_['mean_test_score'])
+    # print(feature_cols[0:13])
     # print(mean_scores)
+    zipped = zip(mean_scores, feature_cols[0:13])
+    for x in sorted(zipped, key = lambda t: t[0]):
+        print(x)
     display_results(y_test, y_pred)
 
 

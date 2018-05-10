@@ -12,7 +12,7 @@ from sklearn.feature_selection import *
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-
+from time import time
 from xgboost import XGBClassifier
 import warnings
 warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
@@ -23,6 +23,7 @@ genre_count = int(os.getenv('genre_count'))
 img_count = int(os.getenv('sample_img_count'))
 
 cross_val_folds = 5
+
 
 def gist_distance(x, y):
     d = (x - y) * (x - y)
@@ -123,6 +124,7 @@ def model_1():
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=1, param_grid=param_grid)
     return grid
 
+
 def XGB_model2():
     # A parameter grid for XGBoost
     params = {
@@ -148,6 +150,7 @@ def XGB_model2():
         random_state=1001 )
     return random_search
 
+
 def display_results(y_test, y_pred):
     print(classification_report(y_test, y_pred))
     cmat = confusion_matrix(y_test, y_pred, labels=range(genre_count))
@@ -165,8 +168,9 @@ def display_results(y_test, y_pred):
 def main():
 
     genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
-    
+    img_count = int(os.getenv('img_count'))
+
+    load_data_start = time()
 
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv').format(genre_count*img_count), sep=';')
     features = np.load('data/features_train_{}.npy'.format(genre_count*img_count))
@@ -180,10 +184,12 @@ def main():
     features_test_GIST = np.load('data/GISTDesc_test_{}.npy'.format(genre_count*img_count))
     features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
 
-    
+
     print(features.shape)
     print(features_GIST.shape)
     print(train_df.shape)
+
+    print("Data files loaded in: ", time()-load_data_start)
 
     # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
     #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
@@ -199,6 +205,9 @@ def main():
 
 
     # Models:
+
+    start = time()
+    print("Starting model training---")
 
     #### General ####
     grid = model_1()
@@ -220,7 +229,6 @@ def main():
     display_results(y_test, y_pred)
 
 
-    
     #### GIST KNN ####
     KNN_GIST = Classifier().KNN()
     KNN_GIST.fit(X_GIST , y)
@@ -229,5 +237,6 @@ def main():
     print("GIST KNN classification")
     display_results(y_test, y_pred_gist)
 
+    print("Finished fitting models in: ", time()-start)
 
 main()

@@ -29,21 +29,24 @@ def gist_distance(x, y):
 class FeatureVectorSelector(object):
     def __call__(self, ftii=None):
         self.feature_to_ignore_index = ftii
-
+    def set_param(self,ftii=None):
+        self.feature_to_ignore_index = ftii
+        
     def transform(self, X):
 
         X1 = []
         X2 = []
 
         if self.feature_to_ignore_index == 0:
-            return X[:,features_lens_com[self.feature_to_ignore_index+1]:108]
+            return X[:,features_lens_com[1]:108]
         
-        X1 = X[:,0:features_lens_com[self.feature_to_ignore_index]]
+        X1 = X[:,0:features_lens_com[self.feature_to_ignore_index-1]]
 
         if self.feature_to_ignore_index < len(features_lens)-1:
             X2 = X[:,features_lens_com[self.feature_to_ignore_index+1]:108]
             return np.concatenate( (X1, X2), axis=1)
-
+        elif self.feature_to_ignore_index == len(features_lens)-1:
+            return X1
         raise ValueError('Feature vector index out of bounds.')
 
     def fit(self, X, y=None):
@@ -78,37 +81,10 @@ class FeatureSelector():
     def FVS(self):
         return FeatureVectorSelector()
 
-feature_cols = ['SIFTHist','GISTHist', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation','EdgeCount' 'GISTDesc']
-features_lens =     [25, 25, 10, 10,10,10, 1, 1, 1, 1, 1, 1, 1, 10,   1]
-features_lens_com = [25, 50, 60, 70,80,90,91,92,93,94,95,96,97, 107, 108]
+feature_cols = ['SIFTHist', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation','EdgeCount','GISTHist']
+features_lens =     [25, 10, 10,10,10, 1, 1, 1, 1, 1, 1, 1, 10,   1,25]
+features_lens_com = [25, 35, 45,55,65,66,67,68,69,70,71,72, 82, 83,108]
 #                   [0,  1,  2   3  4  5  6  7  8  9  10 11 12  13   14]
-
-# def importance(rfc):
-#     importances = rfc.feature_importances_
-#     # importances = pipe.named_steps.randomTree.feature_importances_
-
-#     print(importances)
-
-#     # std = np.std([tree.feature_importances_ for tree in rfc.estimators_],
-#     #              axis=0)
-#     indices = np.argsort(importances)[::-1]
-
-#     # Print the feature ranking
-#     print("Feature ranking:")
-
-#     for f in range(X.shape[1]):
-#         print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]])  )
-
-#     # Plot the feature importances of the forest
-#     plt.figure()
-#     plt.title("Feature importances")
-#     plt.bar(range(X.shape[1]), importances[indices],
-#            color="r"
-#            # , yerr=std[indices]
-#             ,align="center")
-#     plt.xticks(range(X.shape[1]), indices)
-#     plt.xlim([-1, X.shape[1]])
-#     plt.show()
 
 def XGBoost():
     params={
@@ -182,7 +158,7 @@ def model_1():
     return grid
 
 def display_results(y_test, y_pred):
-    # print(classification_report(y_test, y_pred))
+    print(classification_report(y_test, y_pred))
     cmat = confusion_matrix(y_test, y_pred, labels=range(genre_count))
     print("Confusion Matrix:")
     print(cmat)
@@ -289,14 +265,13 @@ def get_X_O_all(singles_scaled=True):
     if singles_scaled:
         # find single features, scale them, put them back in X:
 
-        f=X[:,features_lens_com[6] : features_lens_com[12]]
+        f=X[:,features_lens_com[5] : features_lens_com[11]]
         Xs=np.concatenate((f,features_EdgeCount[:]), axis=1)
         scaler = MinMaxScaler()
         Xs = scaler.fit_transform(Xs)
-        X[:,features_lens_com[6] : features_lens_com[12]] = Xs[:,0:6]
-        X[:,107] = Xs[:,6]
+        X[:,features_lens_com[5] : features_lens_com[11]] = Xs[:,0:6]
+        X[:,features_lens_com[13]] = Xs[:,6]
 
-    # X_GIST = features_GIST
     # X_GISTHist = features_GISTHist
     # print(X_GISTHist.shape)
     # print(X_ec.shape)
@@ -307,12 +282,13 @@ def get_X_O_all(singles_scaled=True):
     features_test_GIST = np.load('data/GISTDesc_test_{}.npy'.format(genre_count*img_count))
     features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
 
+    X_GIST = features_GIST
 
     O = np.concatenate((features_test, features_test_EdgeCount, features_test_GISTHist), axis=1)
-    # O_GIST = features_test_GIST
+    O_GIST = features_test_GIST
     # print(O.shape)
     
-    return X, O
+    return X, O, X_GIST, O_GIST
     
 
 
@@ -323,9 +299,22 @@ def main():
     
     y = train_df['Class']
     y_test = test_df['Class']
-
-    X, O = get_X_O_all(False)
     
+    with_gist = True
+    singles_scaled = True
+
+    X, O, X_GIST, O_GIST = get_X_O_all(singles_scaled)
+    print(X.shape)
+
+
+    if with_gist:
+        fvs=FeatureVectorSelector()
+        fvs.set_param(14)
+
+
+        X=fvs.transform(X)
+        O=fvs.transform(O)
+        print(X.shape)
     # Models:
 
     # #### General ####
@@ -336,18 +325,30 @@ def main():
     # y_pred=grid.predict(features_test)
     # print("General feature classification")
     # display_results(y_test, y_pred)
+    if singles_scaled:
+        print("SCALED.")
+    else:
+        print('UNSCALED.')
 
+    print("Combo classification: \n")
+    
+    print(" Feature Selection:\n",
+    "\tSelectFromModel(RandomForest)\n ",
+    "Classifiers:\n", 
+        "\tKNN\n",
+        "\tRandomForestClassifier\n",
+        "\tXGBoost\n")
+    print("Using parameters from best fit of XGBoost:")
 
-    #### XGBoost ####
+    # ### XGBoost ####
     # grid = XGBoost()
     # grid.fit(X, y)
     # best_param_values_xgb = grid.cv_results_['params'][grid.best_index_]
+    # print(best_param_values_xgb)
     
-
     #### Mega Model ####
-    print("Combo classification")
     best_param_values_xgb = {'subsample': 0.8, 'min_child_weight': 5, 'max_depth': 5, 'gamma': 1, 'colsample_bytree': 0.8}
-    # # print(best_param_values_xgb)
+
     grid = mega_combo_model(xgb_params=best_param_values_xgb)
     grid.fit(X, y)
     y_pred=grid.predict(O)
@@ -368,15 +369,8 @@ def main():
     # KNN_GIST.fit(X_GIST , y)
 
     # y_pred_gist = KNN_GIST.predict(O_GIST)
-    # print("GIST KNN classification")
+    # print("\nGIST K-NearestNeighbour Classification\n")
     # display_results(y_test, y_pred_gist)
 
-
-    # rfc = Classifier().RFC()
-    # rfc.fit(X,y)
-
-    # model = FeatureVectorSelector(11)
-    # X_new = model.transform(X)
-    # print(X_new.shape)
 
 main()

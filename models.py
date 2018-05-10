@@ -20,7 +20,7 @@ warnings.filterwarnings(module='sklearn*', action='ignore', category=Deprecation
 load_dotenv(find_dotenv())
 
 genre_count = int(os.getenv('genre_count'))
-img_count = int(os.getenv('sample_img_count'))
+img_count = int(os.getenv('img_count'))
 
 cross_val_folds = 5
 
@@ -28,29 +28,62 @@ def gist_distance(x, y):
     d = (x - y) * (x - y)
     return np.sum(d)
 
+class FeatureVectorSelector(object):
+    def __call__(self, ftii=None):
+        self.feature_to_ignore_index = ftii
+
+    def transform(self, X):
+
+        X1 = []
+        X2 = []
+
+        if self.feature_to_ignore_index == 0:
+            return X[:,features_lens_com[self.feature_to_ignore_index+1]:82]
+        
+        X1 = X[:,0:features_lens_com[self.feature_to_ignore_index]]
+
+        if self.feature_to_ignore_index < len(features_lens)-1:
+            X2 = X[:,features_lens_com[self.feature_to_ignore_index+1]:82]
+            return np.concatenate( (X1, X2), axis=1)
+
+        raise ValueError('Feature vector index out of bounds.')
+
+    def fit(self, X, y=None):
+        return self
+
 
 class Classifier():
 
-    # def __init__(self):
-        # self.X = X
-        # self.y = y
-    
     def RFC(self):
         return RandomForestClassifier()
-    def XGBoost(self):
-        print("XGBoost")
     def KNN(self):
         return KNeighborsClassifier()
+    def XGB(self):
+        xgb = XGBClassifier(
+            learning_rate=0.1, 
+            n_estimators=50, 
+            objective='multi:softmax',
+            silent=True, 
+            nthread=1)
+
+        return xgb
+
 
 class FeatureSelector():
+    
     def SFM(self,clf):
         return SelectFromModel(clf)
+    
     def SKB(self):
         return SelectKBest(chi2)
 
-class FeatureVectorSelector():
-    def selectTopN(self,clf,n):
-        print("Yo")
+    def FVS(self):
+        return FeatureVectorSelector()
+
+feature_cols = ['SIFTDesc', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation', 'GISTDesc']
+features_lens = [25, 10, 10,10,10, 1,1,1,1,1,1,1, 10]
+features_lens_com = [25, 35, 45,55,65, 66,67,68,69,70,71,72, 82]
+
 
 # def importance(rfc):
 #     importances = rfc.feature_importances_
@@ -79,6 +112,32 @@ class FeatureVectorSelector():
 #     plt.xlim([-1, X.shape[1]])
 #     plt.show()
 
+def XGBoost():
+    params={
+
+        'min_child_weight': [1, 5, 10],
+        'gamma': [0.5, 1, 1.5, 2, 5],
+        'subsample': [0.6, 0.8, 1.0],
+        'colsample_bytree': [0.6, 0.8, 1.0],
+        'max_depth': [3, 4, 5]
+    }
+
+    xgb = XGBClassifier(
+        learning_rate=0.1, 
+        n_estimators=50, 
+        objective='multi:softmax',
+        silent=True, 
+        nthread=1)
+
+    random_search = RandomizedSearchCV(xgb, 
+        param_distributions=params,
+        n_iter=5, 
+        # scoring='roc_auc', 
+        n_jobs=4, 
+        cv=cross_val_folds, 
+        verbose=-1, 
+        random_state=1001 )
+    return random_search
 
 def model_1():
     """ 
@@ -94,6 +153,7 @@ def model_1():
 
     fs = FeatureSelector()
     sfm = fs.SFM(randomforest)
+
 
 
     pipe = Pipeline(steps=[
@@ -123,33 +183,8 @@ def model_1():
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=1, param_grid=param_grid)
     return grid
 
-def XGB_model2():
-    # A parameter grid for XGBoost
-    params = {
-        'min_child_weight': [1, 5, 10],
-        'gamma': [0.5, 1, 1.5, 2, 5],
-        'subsample': [0.6, 0.8, 1.0],
-        'colsample_bytree': [0.6, 0.8, 1.0],
-        'max_depth': [3, 4, 5]
-        }
-    xgb = XGBClassifier(
-        learning_rate=0.02, 
-        n_estimators=10, 
-        objective='multi:softmax',
-        silent=True, 
-        nthread=1)
-    random_search = RandomizedSearchCV(xgb, 
-        param_distributions=params,
-        n_iter=5, 
-        # scoring='roc_auc', 
-        n_jobs=4, 
-        cv=cross_val_folds, 
-        verbose=-1, 
-        random_state=1001 )
-    return random_search
-
 def display_results(y_test, y_pred):
-    print(classification_report(y_test, y_pred))
+    # print(classification_report(y_test, y_pred))
     cmat = confusion_matrix(y_test, y_pred, labels=range(genre_count))
     print("Confusion Matrix:")
     print(cmat)
@@ -159,12 +194,67 @@ def display_results(y_test, y_pred):
 
     print("\n\n")
 
+def mega_combo_model(xgb_params):
+    """ 
+    Feature Selection:
+        SelectFromModel(RandomForest) 
+    Classifiers: 
+        KNN 
+        RandomForestClassifier
+        XGBoost """
 
+    clf = Classifier()
+    randomforest = clf.RFC()
+    knearest = clf.KNN()
+    xgb = clf.XGB()
+
+    fs = FeatureSelector()
+    sfm = fs.SFM(randomforest)
+    fvs = fs.FVS()
+
+
+    pipe = Pipeline(steps=[
+        ('selectFeatures', sfm),
+        ('classify', randomforest)
+        ])
+
+    # just checking
+    # K_BestSelect = [20,30,50]
+    K_Nearest_Neighboors = [5,10]
+    SELECT_FEATURES = [fvs]
+    CLASSIFY = [randomforest , knearest]
+
+    param_grid = [
+        {
+            'selectFeatures': SELECT_FEATURES,
+            'selectFeatures__ftii': [0,1,2,3],
+            'classify': [knearest],
+            'classify__n_neighbors': K_Nearest_Neighboors
+        }
+        ,
+        {
+            'selectFeatures': SELECT_FEATURES,
+            'classify': [randomforest] 
+        }
+        ,
+        {
+            'selectFeatures':SELECT_FEATURES,
+            'classify': [xgb],
+            'classify__min_child_weight': [xgb_params['min_child_weight']],
+            'classify__gamma': [xgb_params['gamma']],
+            'classify__subsample': [xgb_params['subsample']],
+            'classify__colsample_bytree': [xgb_params['colsample_bytree']],
+            'classify__max_depth': [xgb_params['max_depth']]
+        }
+    ]
+    grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=4, param_grid=param_grid)
+    return grid
 
 
 def main():
 
     genre_count = int(os.getenv('genre_count'))
+    # img_count = int(os.getenv('img_count'))
     img_count = int(os.getenv('sample_img_count'))
     
 
@@ -189,45 +279,71 @@ def main():
     #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
     #                                                    'LocalMinima', 'Mean_HSVYBGR'])
 
-    feature_cols = ['SIFTDesc', 'Brightness', 'ColorHist', 'Mean_HSVYBGR','Saturation', 'GISTDesc']
-    features_lens = [25, 10, 30, 10, 8]
+    # feature_cols = ['SIFTDesc', 'Brightness', 'ColorHist', 'Mean_HSVYBGR','Saturation', 'GISTDesc']
+
 
     X = features
     X_GIST = features_GIST
+    X_all = np.concatenate((X, X_GIST), axis=1)
+    print(X_all.shape)
+
+    O = features_test
+    O_GIST = features_test_GIST
+    O_all = np.concatenate((O, O_GIST), axis=1)
+    print(O_all.shape)
+
     y = train_df['Class']
     y_test = test_df['Class']
 
-
+    
     # Models:
 
-    #### General ####
-    grid = model_1()
-    grid.fit(X, y)
-    # mean_scores = np.array(grid.cv_results_['mean_test_score'])
+    # #### General ####
+    # grid = model_1()
+    # grid.fit(X, y)
+    # # mean_scores = np.array(grid.cv_results_['mean_test_score'])
 
-    y_pred=grid.predict(features_test)
-    print("General feature classification")
-    display_results(y_test, y_pred)
+    # y_pred=grid.predict(features_test)
+    # print("General feature classification")
+    # display_results(y_test, y_pred)
 
 
     #### XGBoost ####
-    grid = XGB_model2()
-    # y_bin = label_binarize(y, classes=[0,1,2,3,4,5,6,7,8,9])
+    # grid = XGBoost()
+    # grid.fit(X, y)
+    # best_param_values_xgb = grid.cv_results_['params'][grid.best_index_]
+    
+    best_param_values_xgb = {'subsample': 0.8, 'min_child_weight': 5, 'max_depth': 5, 'gamma': 1, 'colsample_bytree': 0.8}
+    # print(best_param_values_xgb)
+
+    # #### Mega Model ####
+    grid = mega_combo_model(xgb_params=best_param_values_xgb)
     grid.fit(X, y)
 
     y_pred=grid.predict(features_test)
-    print("XGBoost classification")
+
+    print("Combo classification")
+    # mean_scores = np.array(grid.cv_results_['mean_test_score'])
+    # print(mean_scores)
     display_results(y_test, y_pred)
 
 
+
     
-    #### GIST KNN ####
-    KNN_GIST = Classifier().KNN()
-    KNN_GIST.fit(X_GIST , y)
+    # #### GIST KNN ####
+    # KNN_GIST = Classifier().KNN()
+    # KNN_GIST.fit(X_GIST , y)
 
-    y_pred_gist = KNN_GIST.predict(features_test_GIST)
-    print("GIST KNN classification")
-    display_results(y_test, y_pred_gist)
+    # y_pred_gist = KNN_GIST.predict(O_GIST)
+    # print("GIST KNN classification")
+    # display_results(y_test, y_pred_gist)
 
+
+    # rfc = Classifier().RFC()
+    # rfc.fit(X,y)
+
+    # model = FeatureVectorSelector(11)
+    # X_new = model.transform(X)
+    # print(X_new.shape)
 
 main()

@@ -12,15 +12,13 @@ from sklearn.feature_selection import *
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
-
+from sklearn.preprocessing import MinMaxScaler
 from xgboost import XGBClassifier
 import warnings
 warnings.filterwarnings(module='sklearn*', action='ignore', category=DeprecationWarning)
 
 load_dotenv(find_dotenv())
 
-genre_count = int(os.getenv('genre_count'))
-img_count = int(os.getenv('img_count'))
 
 cross_val_folds = 5
 
@@ -38,12 +36,12 @@ class FeatureVectorSelector(object):
         X2 = []
 
         if self.feature_to_ignore_index == 0:
-            return X[:,features_lens_com[self.feature_to_ignore_index+1]:82]
+            return X[:,features_lens_com[self.feature_to_ignore_index+1]:108]
         
         X1 = X[:,0:features_lens_com[self.feature_to_ignore_index]]
 
         if self.feature_to_ignore_index < len(features_lens)-1:
-            X2 = X[:,features_lens_com[self.feature_to_ignore_index+1]:82]
+            X2 = X[:,features_lens_com[self.feature_to_ignore_index+1]:108]
             return np.concatenate( (X1, X2), axis=1)
 
         raise ValueError('Feature vector index out of bounds.')
@@ -80,10 +78,10 @@ class FeatureSelector():
     def FVS(self):
         return FeatureVectorSelector()
 
-feature_cols = ['SIFTDesc', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation', 'GISTDesc']
-features_lens = [25, 10, 10,10,10, 1,1,1,1,1,1,1, 10]
-features_lens_com = [25, 35, 45,55,65, 66,67,68,69,70,71,72, 82]
-
+feature_cols = ['SIFTHist','GISTHist', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation','EdgeCount' 'GISTDesc']
+features_lens =     [25, 25, 10, 10,10,10, 1, 1, 1, 1, 1, 1, 1, 10,   1]
+features_lens_com = [25, 50, 60, 70,80,90,91,92,93,94,95,96,97, 107, 108]
+#                   [0,  1,  2   3  4  5  6  7  8  9  10 11 12  13   14]
 
 # def importance(rfc):
 #     importances = rfc.feature_importances_
@@ -222,91 +220,111 @@ def mega_combo_model(xgb_params):
     # K_BestSelect = [20,30,50]
     K_Nearest_Neighboors = [5]
     SELECT_FEATURES = [
-                    fvs(0), 
-                    fvs(1), 
-                    fvs(2), 
-                    fvs(3), 
-                    fvs(4), 
-                    fvs(5), 
-                    fvs(6), 
-                    fvs(7), 
-                    fvs(8), 
-                    fvs(9), 
-                    fvs(10),
-                    fvs(11),
-                    fvs(12)]
+                    sfm
+                    # fvs(0), 
+                    # fvs(1), 
+                    # fvs(2), 
+                    # fvs(3), 
+                    # fvs(4), 
+                    # fvs(5), 
+                    # fvs(6), 
+                    # fvs(7), 
+                    # fvs(8), 
+                    # fvs(9), 
+                    # fvs(10),
+                    # fvs(11),
+                    # fvs(12),
+                    # fvs(13),
+                    # fvs(14)
+                    ]
     CLASSIFY = [randomforest , knearest]
 
     param_grid = [
-        # {
-        #     'selectFeatures': SELECT_FEATURES,
-        #     'classify': [knearest],
-        #     'classify__n_neighbors': K_Nearest_Neighboors
-        # }
-        # ,
+        {
+            'selectFeatures': SELECT_FEATURES,
+            'classify': [knearest],
+            'classify__n_neighbors': K_Nearest_Neighboors
+        }
+        ,
         {
             'selectFeatures': SELECT_FEATURES,
             'classify': [randomforest] 
         }
-        # ,
-        # {
-        #     'selectFeatures':SELECT_FEATURES,
-        #     'classify': [xgb],
-        #     'classify__min_child_weight': [xgb_params['0min_child_weight']],
-        #     'classify__gamma': [xgb_params['gamma']],
-        #     'classify__subsample': [xgb_params['subsample']],
-        #     'classify__colsample_bytree': [xgb_params['colsample_bytree']],
-        #     'classify__max_depth': [xgb_params['max_depth']]
-        # }
+        ,
+        {
+            'selectFeatures':SELECT_FEATURES,
+            'classify': [xgb],
+            'classify__min_child_weight': [xgb_params['min_child_weight']],
+            'classify__gamma': [xgb_params['gamma']],
+            'classify__subsample': [xgb_params['subsample']],
+            'classify__colsample_bytree': [xgb_params['colsample_bytree']],
+            'classify__max_depth': [xgb_params['max_depth']]
+        }
     ]
     grid = GridSearchCV(pipe, cv=cross_val_folds, n_jobs=4, param_grid=param_grid)
     return grid
 
 
-def main():
+genre_count = int(os.getenv('genre_count'))
+img_count = int(os.getenv('img_count'))
+# img_count = int(os.getenv('sample_img_count'))
 
-    genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('img_count'))
-    # img_count = int(os.getenv('sample_img_count'))
+def get_X_O_all(singles_scaled=True):
     
 
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv').format(genre_count*img_count), sep=';')
     features = np.load('data/features_train_{}.npy'.format(genre_count*img_count))
-    
-    features_GIST = np.load('data/GISTDesc_train_{}.npy'.format(genre_count*img_count))
-    features_GIST = np.concatenate(features_GIST.tolist(), axis=0)
-    
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
     features_test = np.load('data/features_test_{}.npy'.format(genre_count*img_count))
     
-    features_test_GIST = np.load('data/GISTDesc_test_{}.npy'.format(genre_count*img_count))
-    features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
-
+    features_test_EdgeCount = np.load('data/EdgeCount_test_{}.npy'.format(genre_count*img_count))
+    features_EdgeCount = np.load('data/EdgeCount_train_{}.npy'.format(genre_count*img_count))
+    
+    features_test_GISTHist = np.load('data/GISTHist_test_{}.npy'.format(genre_count*img_count))
+    features_GISTHist = np.load('data/GISTHist_train_{}.npy'.format(genre_count*img_count))
     
     # print(features.shape)
     # print(features_GIST.shape)
     # print(train_df.shape)
+    X = np.concatenate((features, features_EdgeCount, features_GISTHist), axis=1)
 
-    # features_df = pd.DataFrame(features, columns=['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation',
-    #                                                    'ColorHist', 'GISTDesc', 'LocalMaxima',
-    #                                                    'LocalMinima', 'Mean_HSVYBGR'])
+    if singles_scaled:
+        # find single features, scale them, put them back in X:
 
-    # feature_cols = ['SIFTDesc', 'Brightness', 'ColorHist', 'Mean_HSVYBGR','Saturation', 'GISTDesc']
+        f=X[:,features_lens_com[6] : features_lens_com[12]]
+        Xs=np.concatenate((f,features_EdgeCount[:]), axis=1)
+        scaler = MinMaxScaler()
+        Xs = scaler.fit_transform(Xs)
+        X[:,features_lens_com[6] : features_lens_com[12]] = Xs[:,0:6]
+        X[:,107] = Xs[:,6]
+
+    # X_GIST = features_GIST
+    # X_GISTHist = features_GISTHist
+    # print(X_GISTHist.shape)
+    # print(X_ec.shape)
+    # print(X.shape)
+    # return X
+    features_GIST = np.load('data/GISTDesc_train_{}.npy'.format(genre_count*img_count))
+    features_GIST = np.concatenate(features_GIST.tolist(), axis=0)
+    features_test_GIST = np.load('data/GISTDesc_test_{}.npy'.format(genre_count*img_count))
+    features_test_GIST = np.concatenate(features_test_GIST.tolist(), axis=0)
 
 
-    X = features
-    X_GIST = features_GIST
-    X_all = np.concatenate((X, X_GIST), axis=1)
-    # print(X_all.shape)
+    O = np.concatenate((features_test, features_test_EdgeCount, features_test_GISTHist), axis=1)
+    # O_GIST = features_test_GIST
+    # print(O.shape)
+    
+    return X, O
+    
 
-    O = features_test
-    O_GIST = features_test_GIST
-    O_all = np.concatenate((O, O_GIST), axis=1)
-    # print(O_all.shape)
 
+def main():
+    
+    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv').format(genre_count*img_count), sep=';')
+    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
+    
     y = train_df['Class']
     y_test = test_df['Class']
 
+    X, O = get_X_O_all(False)
     
     # Models:
 
@@ -325,22 +343,21 @@ def main():
     # grid.fit(X, y)
     # best_param_values_xgb = grid.cv_results_['params'][grid.best_index_]
     
-    best_param_values_xgb = {'subsample': 0.8, 'min_child_weight': 5, 'max_depth': 5, 'gamma': 1, 'colsample_bytree': 0.8}
-    # print(best_param_values_xgb)
 
-    # #### Mega Model ####
+    #### Mega Model ####
+    print("Combo classification")
+    best_param_values_xgb = {'subsample': 0.8, 'min_child_weight': 5, 'max_depth': 5, 'gamma': 1, 'colsample_bytree': 0.8}
+    # # print(best_param_values_xgb)
     grid = mega_combo_model(xgb_params=best_param_values_xgb)
     grid.fit(X, y)
+    y_pred=grid.predict(O)
 
-    y_pred=grid.predict(features_test)
-
-    print("Combo classification")
-    mean_scores = np.array(grid.cv_results_['mean_test_score'])
+    # mean_scores = np.array(grid.cv_results_['mean_test_score'])
     # print(feature_cols[0:13])
     # print(mean_scores)
-    zipped = zip(mean_scores, feature_cols[0:13])
-    for x in sorted(zipped, key = lambda t: t[0]):
-        print(x)
+    # zipped = zip(mean_scores, feature_cols[0:13])
+    # for x in sorted(zipped, key = lambda t: t[0]):
+    #     print(x)
     display_results(y_test, y_pred)
 
 

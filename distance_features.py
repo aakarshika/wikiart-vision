@@ -1,12 +1,11 @@
+"""
+@author: Bhavika Tekwani
+"""
+
 import os
-import cv2
-import leargist
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv, find_dotenv
-from PIL import Image
-import matplotlib.pyplot as plt
-from scipy.signal import argrelextrema
 from sklearn.metrics.pairwise import pairwise_distances
 from collections import Counter
 
@@ -36,6 +35,13 @@ def get_class(df, train_case):
 
 
 def kNN(distance_matrix, df, k):
+    '''
+    kNN with GIST descriptors. 
+    :param distance_matrix: np.array
+    :param df: DataFrame
+    :param k: int, no of clusters
+    :return: pandas DataFrame with neighbours 
+    '''
     neighbours = pd.DataFrame(distance_matrix.apply(lambda s: s.nsmallest(k+1).index.tolist()[1:], axis=1))
     neighbours = neighbours.rename(columns={0: 'nbr_list'})
     nbr_class = []

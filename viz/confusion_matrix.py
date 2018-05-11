@@ -1,12 +1,15 @@
+"""
+@author: Bhavika Tekwani
+"""
+
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from sklearn import svm, datasets
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from dotenv import load_dotenv, find_dotenv
 import os
+
 
 load_dotenv(find_dotenv())
 
@@ -29,8 +32,6 @@ def plot_confusion_matrix(cm, classes,
         print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
-
-    print(cm)
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
@@ -61,7 +62,6 @@ pkl_pred = pickle.load(open(pickle_path + y_pred_path, 'rb'))
 
 # Compute confusion matrix
 cnf_matrix = confusion_matrix(pkl_act, pkl_pred)
-
 
 print(cnf_matrix)
 

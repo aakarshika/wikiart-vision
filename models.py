@@ -73,16 +73,14 @@ class Classifier():
 class FeatureSelector():
     
     def SFM(self,clf):
+        # default threshold is 1e-5.
         return SelectFromModel(clf)
-    
-    def SKB(self):
-        return SelectKBest(chi2)
 
     def FVS(self):
         return FeatureVectorSelector()
 
 feature_cols = ['SIFTHist', 'Brightness', 'BHist','GHist','RHist', 'Mean_H', 'Mean_S','Mean_V','Mean_Y',' Mean_B','Mean_G','Mean_R','Saturation','EdgeCount','GISTHist']
-features_lens =     [25, 10, 10,10,10, 1, 1, 1, 1, 1, 1, 1, 10,   1,25]
+features_lens =     [25, 10, 10,10, 10, 1, 1, 1, 1, 1, 1, 1, 10,   1,25]
 features_lens_com = [25, 35, 45,55,65,66,67,68,69,70,71,72, 82, 83,108]
 #                   [0,  1,  2   3  4  5  6  7  8  9  10 11 12  13   14]
 

@@ -1,39 +1,57 @@
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import pickle
-import itertools
+import sklearn.metrics
+from sklearn.metrics import classification_report
+import os
+from dotenv import load_dotenv, find_dotenv
 from pprint import pprint
 
-lrs = [1e-5, 1e-4, 1e-3, 1e-2]
-epochs = [20]
+load_dotenv(find_dotenv())
+pickle_path = os.getenv('pickle_path')
 
-combinations = list(itertools.product(lrs, epochs))
+lrs = ['1e-05', '0.0001', '0.001', '0.01', '0.1']
+epochs = '20'
 
-for c in combinations:
-    actual = 'models/rnet18_re_y_actual_{}_{}.pkl'.format(c[0], c[1])
-    pred = 'models/rnet18_re_ypred_{}_{}.pkl'.format(c[0], c[1])
+for lr in lrs:
+    for f in os.listdir(pickle_path):
+        if f.endswith('pkl'):
+                if lr in f and epochs in f:
+                    if 'cnn' in f:
+                        y_pred_path = 'cnn_ypred_{}_{}.pkl'.format(lr, epochs)
+                        y_act_path = 'cnn_y_actual_{}_{}.pkl'.format(lr, epochs)
+                        pkl_act = pickle.load(open(pickle_path + y_act_path, 'rb'))
+                        pkl_pred = pickle.load(open(pickle_path + y_pred_path, 'rb'))
 
-    y = pickle.load(open(actual, 'rb'))
-    y_pred = pickle.load(open(pred, 'rb'))
+                        print("CNN - 2 Layer, Learning rate: {}".format(lr))
+                        print("Accuracy: ",sklearn.metrics.accuracy_score(pkl_pred, pkl_act) * 100)
+                        print("Precision: ", sklearn.metrics.precision_score(pkl_pred, pkl_act, average='weighted') * 100)
+                        print("Recall:", sklearn.metrics.recall_score(pkl_pred, pkl_act, average='weighted') * 100)
 
-    y_act_list = []
-    y_pred_list = []
+                        pprint(classification_report(pkl_act, pkl_pred, target_names=['abstract_painting',
+                                                                                            'cityscape',
+                                                                                            'genre_painting',
+                                                                                            'illustration', 'landscape',
+                                                                                            'nude_painting',
+                                                                                            'portrait',
+                                                                                            'religious_painting',
+                                                                                            'sketch_and_study',
+                                                                                            'still_life']))
 
-    for i in y:
-        y_act_list.append(i.item())
-    for i in y_pred:
-        y_pred_list.append(i.item())
+                    elif 'rnet' in f:
+                        y_pred_path = 'rnet18_re_ypred_{}_{}.pkl'.format(lr, epochs)
+                        y_act_path = 'rnet18_re_y_actual_{}_{}.pkl'.format(lr, epochs)
+                        pkl_act = pickle.load(open(pickle_path + y_act_path, 'rb'))
+                        pkl_pred = pickle.load(open(pickle_path + y_pred_path, 'rb'))
+                        print("ResNet (transfer learning) with learning rate {}".format(lr))
+                        print("Accuracy:", sklearn.metrics.accuracy_score(pkl_pred, pkl_act) * 100)
+                        print("Precision:", sklearn.metrics.precision_score(pkl_pred, pkl_act, average='weighted') * 100)
+                        print("Recall:", sklearn.metrics.recall_score(pkl_pred, pkl_act, average='weighted') * 100)
 
-    print("For learning rate {}".format(c[0]))
-    print("Accuracy", accuracy_score(y_act_list, y_pred_list) * 100)
-
-    pprint(classification_report(y_act_list, y_pred_list, target_names=['abstract_painting',
-                                                                       'cityscape',
-                                                                       'genre_painting',
-                                                                       'illustration', 'landscape',
-                                                                       'nude_painting',
-                                                                       'portrait',
-                                                                       'religious_painting',
-                                                                       'sketch_and_study',
-                                                                       'still_life']))
+                        pprint(classification_report(pkl_act, pkl_pred, target_names=['abstract_painting',
+                                                                                      'cityscape',
+                                                                                      'genre_painting',
+                                                                                      'illustration', 'landscape',
+                                                                                      'nude_painting',
+                                                                                      'portrait',
+                                                                                      'religious_painting',
+                                                                                      'sketch_and_study',
+                                                                                      'still_life']))

@@ -128,6 +128,9 @@ def main(learning_rate, epochs=20):
     class_correct = [i for i in range(n_classes)]
     class_total = [0] * n_classes
 
+    pred = []
+    actual = []
+
     for data in wiki_test_dataloader:
         images, labels = data['image'], data['class']
         batchsize = images.shape[0]
@@ -135,6 +138,9 @@ def main(learning_rate, epochs=20):
         outputs = net(Variable(images))
         _, predicted = torch.max(outputs.data, 1)
         c = (predicted == labels).squeeze()
+
+        pred.extend(predicted.numpy())
+        actual.extend(labels.numpy())
 
         for i in range(batchsize):
             label = labels[i]
@@ -144,14 +150,14 @@ def main(learning_rate, epochs=20):
     print("Correct classes", class_correct)
     print("Total count for each class", class_total)
 
-    # pkl1_name = "cnn_ypred_{}_{}.pkl".format(learning_rate, epochs)
-    # pkl2_name = "cnn_y_actual_{}_{}.pkl".format(learning_rate, epochs)
-    #
-    # with open(pickle_path+pkl1_name, 'wb') as f:
-    #     pickle.dump(y_pred, f)
-    #
-    # with open(pickle_path+pkl2_name, 'wb') as f2:
-    #     pickle.dump(y_actual, f2)
+    pkl1_name = "cnn_ypred_{}_{}.pkl".format(learning_rate, epochs)
+    pkl2_name = "cnn_y_actual_{}_{}.pkl".format(learning_rate, epochs)
+
+    with open(pickle_path+pkl1_name, 'wb') as f:
+        pickle.dump(pred, f)
+
+    with open(pickle_path+pkl2_name, 'wb') as f2:
+        pickle.dump(actual, f2)
 
     for i in range(len(classes)):
         print('Accuracy of %5s : %2d %%' % (
@@ -161,11 +167,10 @@ def main(learning_rate, epochs=20):
 if __name__ == '__main__':
 
     lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-    epochs = [100]
+    epochs = [20]
 
     combinations = list(itertools.product(lrs, epochs))
 
-    # for c in combinations:
-    #     print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
-    #     main(learning_rate=c[0], epochs=c[1])
-    main(learning_rate=0.001, epochs=20)
+    for c in combinations:
+        print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
+        main(learning_rate=c[0], epochs=c[1])

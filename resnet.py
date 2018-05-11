@@ -149,17 +149,15 @@ def main(learning_rate, epochs=20):
     print("Correct classes", class_correct)
     print("Total count for each class", class_total)
 
-    print(len(pred), pred[0])
+    print("Pickling predictions and labels")
+    pkl1_name = "rnet18_re_ypred_{}_{}.pkl".format(learning_rate, epochs)
+    pkl2_name = "rnet18_re_y_actual_{}_{}.pkl".format(learning_rate, epochs)
 
-    # print("Pickling predictions and labels")
-    # pkl1_name = "rnet18_re_ypred_{}_{}.pkl".format(learning_rate, epochs)
-    # pkl2_name = "rnet18_re_y_actual_{}_{}.pkl".format(learning_rate, epochs)
+    with open(pickle_path + pkl1_name, 'wb') as f:
+        pickle.dump(pred, f)
 
-    # with open(pickle_path + pkl1_name, 'wb') as f:
-    #     pickle.dump(y_pred, f)
-    #
-    # with open(pickle_path + pkl2_name, 'wb') as f2:
-    #     pickle.dump(y_actual, f2)
+    with open(pickle_path + pkl2_name, 'wb') as f2:
+        pickle.dump(actual, f2)
 
     for i in range(len(classes)):
         print('Accuracy of %5s : %2d %%' % (
@@ -168,13 +166,11 @@ def main(learning_rate, epochs=20):
 
 if __name__ == '__main__':
 
-    lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+    lrs = [1e-2, 1e-1]
     epochs = [20]
 
     combinations = list(itertools.product(lrs, epochs))
 
-    # for c in combinations:
-    #     print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
-    #     main(learning_rate=c[0], epochs=c[1])
-
-    main(learning_rate=0.01, epochs=1)
+    for c in combinations:
+        print("Learning rate {}, no of epochs {}".format(c[0], c[1]))
+        main(learning_rate=c[0], epochs=c[1])

@@ -178,15 +178,6 @@ class Features():
         return vocab
 
 
-def main():
-
-    genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
-
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
-
-
 def generate_files(count):
     """
     Creates all possible numpy arrays - featuresets for train and test - 100 and 1000 cases each. 
@@ -239,4 +230,4 @@ if __name__ == '__main__':
     columns = ['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation', 'ColorHist',
              'GISTDesc', 'LocalMaxima', 'LocalMinima', 'Mean_HSVYBGR']
 
-    generate_files(100)
+    generate_files(1000)

@@ -1,6 +1,6 @@
 import pickle
 import sklearn.metrics
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 import os
 from dotenv import load_dotenv, find_dotenv
 from pprint import pprint
@@ -10,6 +10,7 @@ pickle_path = os.getenv('pickle_path')
 
 lrs = ['1e-05', '0.0001', '0.001', '0.01', '0.1']
 epochs = '20'
+
 
 for lr in lrs:
     for f in os.listdir(pickle_path):
@@ -36,6 +37,9 @@ for lr in lrs:
                                                                                             'sketch_and_study',
                                                                                             'still_life']))
 
+
+                        pprint(confusion_matrix(pkl_act, pkl_pred))
+
                     elif 'rnet' in f:
                         y_pred_path = 'rnet18_re_ypred_{}_{}.pkl'.format(lr, epochs)
                         y_act_path = 'rnet18_re_y_actual_{}_{}.pkl'.format(lr, epochs)
@@ -55,3 +59,5 @@ for lr in lrs:
                                                                                       'religious_painting',
                                                                                       'sketch_and_study',
                                                                                       'still_life']))
+
+                        pprint(confusion_matrix(pkl_act, pkl_pred))

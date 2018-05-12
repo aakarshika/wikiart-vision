@@ -29,12 +29,10 @@ copy('create_dataset.py', dest+'/src/')
 copy('distance_features.py', dest+'/src/')
 copy('feature_extraction.py', dest+'/src/')
 copy('wikiart.py', dest+'/src/')
-copy('GISTHist_extractor.py', dest+'/src/')
 
 copy('Notes/leargist_setup.md', dest+'/Notes/')
 
 copy('README.md', dest)
-copy('vision_dataset.zip', dest)
 copy('requirements.txt', dest)
 copy('sample.env', dest)
 copy('aws.env', dest)

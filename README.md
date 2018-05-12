@@ -50,9 +50,8 @@ performance metrics for the model.
 
 # Data
 
-1) vision_dataset.zip: Contains two folders for train and test images. Unzipping this folder
-by itself will not make the scripts run. These are just an example of the used data.
-For the whole Wikiart dataset, go (here)[https://github.com/cs-chan/ICIP2016-PC/tree/master/WikiArt%20Dataset].
+1) To download the Wikiart dataset, go (here)[https://github.com/cs-chan/ICIP2016-PC/tree/master/WikiArt%20Dataset].
+The entire dataset is 27 GB. 
 2) /data: This folder must be created by you under the project directory so that
 other scripts can store feature numpy arrays here. 
 3) /models: All model checkpoints for ResNet18 and CNNs are stored here. Prediction 

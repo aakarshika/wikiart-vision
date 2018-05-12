@@ -65,4 +65,3 @@ and actual pickled lists are also saved here by the resnet.py and cnn.py scripts
 3) wikiart.py: The DataLoader for managing our CNN training. 
 4) viz/confusion_matrix.py: A utility script to generate the confusion matrix for the 
 ResNet18 model we have included in the paper. 
-5) utils.py: Utility file for feature vector operations. 

@@ -1,5 +1,8 @@
 ### Genrewise Classification of Fine Art Paintings from Wikiart
 
+
+Bhavika Tekwani, Akarshika Priydarshi
+
 ## Prerequisites:
 
 Anaconda 3.4 or higher. 
@@ -33,14 +36,14 @@ There are other files which are not mentioned in this list because they don't ha
 be run to replicate the results, they are mostly utlity files to generate visualizations, 
 evaluations or data. 
 
-1) create_dataset.py: Generates the dataset based on how many classes & images are needed.
-2) feature_extraction.py: Creates Numpy arrays which have all the features for train and test datasets.
+1) src/create_dataset.py: Generates the dataset based on how many classes & images are needed.
+2) src/feature_extraction.py: Creates Numpy arrays which have all the features for train and test datasets.
 These feature arrays will be stored in the '/data' folder under your project.
 Additionally, it also creates vocabulary files for train and test and arrays containing GIST descriptors.
-3) models.py: Contains ML models like kNN, Random Forest and XGBoost along with the GridSearchCV pipeline.
-4) resnet.py: The entire ResNet18 for end-to-end data loading, training, testing and model evaluation steps.
-5) cnn.py: Dor end-to-end data loading, training, testing and model evaluation of the 2 Layer CNN. 
-6) resnet_eval.py: Assuming you have a folder called 'models' in your project, this file will automatically look
+3) src/models.py: Contains ML models like kNN, Random Forest and XGBoost along with the GridSearchCV pipeline.
+4) src/resnet.py: The entire ResNet18 for end-to-end data loading, training, testing and model evaluation steps.
+5) src/cnn.py: Dor end-to-end data loading, training, testing and model evaluation of the 2 Layer CNN. 
+6) src/resnet_eval.py: Assuming you have a folder called 'models' in your project, this file will automatically look
 for stored prediction pickles for each type of CNN and ResNet with varying learning rates and calculate various 
 performance metrics for the model. 
 
@@ -63,3 +66,4 @@ and actual pickled lists are also saved here by the resnet.py and cnn.py scripts
 3) wikiart.py: The DataLoader for managing our CNN training. 
 4) viz/confusion_matrix.py: A utility script to generate the confusion matrix for the 
 ResNet18 model we have included in the paper. 
+5) utils.py: Utility file for feature vector operations. 

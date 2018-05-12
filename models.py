@@ -196,7 +196,7 @@ def main():
 
     clf=model('knn')
     a,p,r = fit_n_predict(clf,Xg,y,Og,y_test)
-    print("K-NN GIST\t\t",a,p,r)
+    print("K-NN GIST\t",a,p,r)
 
     print("\nWith Select From Model\n")
 
@@ -215,7 +215,7 @@ def main():
     
     clf=model('knn',select=True)
     a,p,r = fit_n_predict(clf,Xg,y,Og,y_test)
-    print("K-NN GIST\t\t",a,p,r)
+    print("K-NN GIST\t",a,p,r)
 
 
 

@@ -1,8 +1,12 @@
+"""
+@author: Bhavika Tekwani
+"""
+
 from dotenv import load_dotenv, find_dotenv
 import os
 import pandas as pd
-from scipy.misc import imread, imsave, imresize
-from shutil import copyfile, copy
+from scipy.misc import imread
+from shutil import copy
 
 load_dotenv(find_dotenv())
 
@@ -26,11 +30,15 @@ for cls, group in test_df.groupby('Class'):
 
 # Create sample train and test sets
 
-def create_dataset(df, genre_count, image_count, output_fname, mode='local'):
+def create_dataset(df, genre_count, image_count, output_fname):
     """
     
     Creates a CSV file with the image location, artist and class label (encoded for artists). 
-    :param filepath: 
+    This file would contain the desired number of classes and paintings per class. 
+    :param df: the dataframe to be used for creating train and test CSV files
+    :param genre_count: int, no of classes
+    :param image_count, int, no of images to be used per class
+    :param output_fname, str, destination path
     """
 
     counts = df['Class'].value_counts()
@@ -48,6 +56,11 @@ def create_dataset(df, genre_count, image_count, output_fname, mode='local'):
 
 
 def explore(df):
+    """
+    Utility function to check the image size by Path. 
+    :param df: 
+    :return: 
+    """
     for i in range(df.shape[0]):
         f = df['Path'].iloc[i]
         img = imread(f)
@@ -57,7 +70,7 @@ def explore(df):
 
 def create_folders(df, type, dest_path, mode='aws'):
     """
-    Moves the image files that have been selected to separate train/test folders.
+    Moves the image files that have been selected by create_dataset() to separate train/test folders.
     Creates train and test files with the image paths (absolute names) and the class. 
     This is mostly useful for DeepNet training on AWS. 
     :param df: 
@@ -84,16 +97,11 @@ def main():
     global test_df
 
     genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
+    img_count = int(os.getenv('img_count'))
 
-    genre_count = 10
-    img_count = 100
+    create_dataset(train_df, genre_count, img_count, output_fname='train_aws_{}.csv'.format(genre_count*img_count), mode='aws')
+    create_dataset(test_df, genre_count, img_count, output_fname='test_{}.csv'.format(genre_count*img_count), mode='aws')
 
-    # create_dataset(train_df, genre_count, img_count, output_fname='train_aws_{}.csv'.format(genre_count*img_count), mode='aws')
-    # create_dataset(test_df, genre_count, img_count, output_fname='test_{}.csv'.format(genre_count*img_count), mode='aws')
-
-    # train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_.csv'.format(genre_count*img_count)), sep=';')
-    #
     train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count * img_count)),
                            sep=';')
 
@@ -103,7 +111,7 @@ def main():
     create_folders(train_df, type='train', dest_path='/home/aakarshika/a/wikiart/train_wikiart682/', mode='aws')
     create_folders(test_df, type='test', dest_path='/home/aakarshika/a/wikiart/test_wikiart682/', mode='aws')
 
-    # explore(train_df)
+    explore(train_df)
 
 
 if __name__ == '__main__':

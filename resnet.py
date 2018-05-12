@@ -166,7 +166,7 @@ def main(learning_rate, epochs=20):
 
 if __name__ == '__main__':
 
-    lrs = [1e-2, 1e-1]
+    lrs = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
     epochs = [20]
 
     combinations = list(itertools.product(lrs, epochs))

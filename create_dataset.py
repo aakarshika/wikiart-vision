@@ -100,8 +100,8 @@ def main():
     test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count * img_count)),
                            sep=';')
 
-    create_folders(train_df, type='train', dest_path='/home/bhavika/wikiart/train_wikiart682/', mode='aws')
-    create_folders(test_df, type='test', dest_path='/home/bhavika/wikiart/test_wikiart682/', mode='aws')
+    create_folders(train_df, type='train', dest_path='/home/aakarshika/a/wikiart/train_wikiart682/', mode='aws')
+    create_folders(test_df, type='test', dest_path='/home/aakarshika/a/wikiart/test_wikiart682/', mode='aws')
 
     # explore(train_df)
 

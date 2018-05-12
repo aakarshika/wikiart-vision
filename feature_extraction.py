@@ -29,13 +29,6 @@ class FeatureExtractor():
         self.hsv_hist = None
         self.yuv_hist = None
 
-    def SIFT(self):
-        sift = cv2.xfeatures2d.SIFT_create()
-        keypoints, descriptors = sift.detectAndCompute(self.bw_img, None)
-        if descriptors is None:
-            descriptors = np.zeros((0, 128))
-        return descriptors
-
     def histograms(self):
         bhist = cv2.calcHist([self.img_small], [0], None, [HISTOGRAM_BINS], [0, 256])
         ghist = cv2.calcHist([self.img_small], [1], None, [HISTOGRAM_BINS], [0, 256])
@@ -53,20 +46,6 @@ class FeatureExtractor():
         self.yuv_hist = [yhist, uhist, vhist]
         # print(self.bgr_hist)
 
-    def brightness(self):
-        hist = cv2.calcHist([self.yuv_img], [0], None, [HISTOGRAM_BINS], [0, 256])
-        # self.histograms()
-        # hist = self.yuv_hist[0]
-        hist = np.transpose(hist)[0]
-        return hist
-
-    def saturation(self):
-        hist = cv2.calcHist([self.yuv_img], [1], None, [HISTOGRAM_BINS], [0, 256])
-        # self.histograms()
-        # hist = self.yuv_hist[1]
-        hist = np.transpose(hist)[0]
-        return hist
-
     def color_histogram(self):
         bhist = cv2.calcHist([self.img_small], [0], None, [HISTOGRAM_BINS], [0, 256])
         ghist = cv2.calcHist([self.img_small], [1], None, [HISTOGRAM_BINS], [0, 256])
@@ -76,6 +55,33 @@ class FeatureExtractor():
         rhist = np.transpose(rhist)[0]
         colorHist = np.append(bhist, [ghist, rhist])
         return colorHist
+
+    def brightness(self):
+        hist = cv2.calcHist([self.yuv_img], [0], None, [HISTOGRAM_BINS], [0, 256])
+        # self.histograms()
+        # hist = self.yuv_hist[0]
+        hist = np.transpose(hist)[0]
+        return hist
+
+    def saturation(self):
+        hist = cv2.calcHist([self.hsv_img], [1], None, [HISTOGRAM_BINS], [0, 256])
+        # self.histograms()
+        # hist = self.yuv_hist[1]
+        hist = np.transpose(hist)[0]
+        return hist
+
+    def GIST(self):
+        x = Image.open(self.path)
+        descriptors = leargist.color_gist(x)
+        return np.array(descriptors)
+    
+    def SIFT(self):
+        sift = cv2.xfeatures2d.SIFT_create()
+        keypoints, descriptors = sift.detectAndCompute(self.bw_img, None)
+        if descriptors is None:
+            descriptors = np.zeros((0, 128))
+        return descriptors
+
 
     def mean_HSVYBGR(self):
         self.histograms()
@@ -88,11 +94,6 @@ class FeatureExtractor():
         mr = np.mean(cv2.normalize(self.bgr_hist[2], None))
         return [mh, ms, mv, my, mb, mg, mr]
 
-    def GIST(self):
-        x = Image.open(self.path)
-        descriptors = leargist.color_gist(x)
-        return np.array(descriptors)
-    
     def edge_count(self):
         blurred= cv2.GaussianBlur(self.bw_img,(3,3),0)
 
@@ -116,6 +117,7 @@ class Features():
         self.vocab = None
         self.features = None
         self.KMEANS_CLUSTERS_FOR_SIFT = 25
+        self.KMEANS_CLUSTERS_FOR_GIST = 25
 
     def createHistogram(self, descriptor_list, voc, k):
         features = np.zeros(k, "float32")
@@ -136,49 +138,51 @@ class Features():
             fe = FeatureExtractor(path=path)
 
             img_features = {'Path': path,
-                            # 'SIFTDesc': fe.SIFT(),
-                            # 'Brightness': fe.brightness(),
-                            # 'Saturation': fe.saturation(),
-                            # 'ColorHist': fe.color_histogram(),
-                            # 'Mean_HSVYBGR': fe.mean_HSVYBGR(),
+                            'ColorHist': fe.color_histogram(),
+                            'Brightness': fe.brightness(),
+                            'Saturation': fe.saturation(),
+                            'SIFTDesc': fe.SIFT(),
+                            'GISTDesc': fe.GIST(),
+                            'Mean_HSVYBGR': fe.mean_HSVYBGR(),
                             'EdgeCount': fe.edge_count()
-                            # ,'GISTDesc': fe.GIST()
                             }
 
-            # if not test:
-            #     if self.sift_descriptor_pool is None:
-            #         self.sift_descriptor_pool = img_features['SIFTDesc']
-            #     else:
-            #         self.sift_descriptor_pool = np.vstack((self.sift_descriptor_pool, img_features['SIFTDesc']))
+            if not test:
+                if self.sift_descriptor_pool is None:
+                    self.sift_descriptor_pool = img_features['SIFTDesc']
+                else:
+                    self.sift_descriptor_pool = np.vstack((self.sift_descriptor_pool, img_features['SIFTDesc']))
 
-            #     if self.gist_descriptor_pool is None:
-            #         self.gist_descriptor_pool = img_features['GISTDesc']
-            #     else:
-            #         self.gist_descriptor_pool = np.vstack((self.gist_descriptor_pool, img_features['GISTDesc']))
+                if self.gist_descriptor_pool is None:
+                    self.gist_descriptor_pool = img_features['GISTDesc']
+                else:
+                    self.gist_descriptor_pool = np.vstack((self.gist_descriptor_pool, img_features['GISTDesc']))
 
-            #     if self.vocab is None:
-            #         print("Started kMeans clustering")
-            #         self.clusterDescriptors(self.sift_descriptor_pool, self.KMEANS_CLUSTERS_FOR_SIFT)
-            #     elif vocab is not None:
-            #         self.vocab = vocab
+                if self.vocab is None:
+                    print("Started kMeans clustering for SIFT")
+                    self.clusterDescriptors(self.sift_descriptor_pool, self.KMEANS_CLUSTERS_FOR_SIFT)
+                    print("Started kMeans clustering for GIST")
+                    self.clusterDescriptors(self.gist_descriptor_pool, self.KMEANS_CLUSTERS_FOR_GIST)
+                elif vocab is not None:
+                    self.vocab = vocab
 
             self.image_data.append(img_features)
 
         for im in tqdm(self.image_data):
-            # if not test:
-            #     vocab = self.vocab
-            # hist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
-            # im['SIFTHist'] = hist
-            # im['features'] = hist
+            if not test:
+                vocab = self.vocab
+            SIFThist = self.createHistogram(im['SIFTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+            im['SIFTHist'] = SIFThist
+            GISThist = self.createHistogram(im['GISTDesc'], vocab, self.KMEANS_CLUSTERS_FOR_SIFT)
+            im['GISTHist'] = GISThist
 
-            # im['features'] = np.append(im['features'], im['Brightness'])
-            # im['features'] = np.append(im['features'], im['ColorHist'])
-            # im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
-            # im['features'] = np.append(im['features'], im['Saturation'])
-
-
-
-            im['features'] =  im['EdgeCount']
+            im['features'] =  im['ColorHist']
+            im['features'] = np.append(im['features'], im['Brightness'])
+            im['features'] = np.append(im['features'], im['Saturation'])
+            im['features'] = np.append(im['features'], im['SIFTHist'])
+            im['features'] = np.append(im['features'], im['GISThist'])
+            im['features'] = np.append(im['features'], im['Mean_HSVYBGR'])
+            im['features'] = np.append(im['features'], im['EdgeCount'])
 
             if self.features is None:
                 self.features = im['features']
@@ -187,15 +191,6 @@ class Features():
 
         vocab = self.vocab
         return vocab
-
-
-def main():
-
-    genre_count = int(os.getenv('genre_count'))
-    img_count = int(os.getenv('sample_img_count'))
-
-    train_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'train_{}.csv'.format(genre_count*img_count)), sep=';')
-    test_df = pd.read_csv(os.path.join(os.getenv('dataset_location'), 'test_{}.csv'.format(genre_count*img_count)), sep=';')
 
 
 def generate_files(count):
@@ -214,43 +209,35 @@ def generate_files(count):
 
     f_train = Features(df=train_df)
     train_vocab = f_train.createFeatures()
-    # np.save('data/features_train_{}.npy'.format(count), f_train.features)
-    # print("Saved train features")
-
-    # np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
-    # print("Saved train vocab")
+    np.save('data/features_train_{}.npy'.format(count), f_train.features)
+    print("Saved train features")
+    np.save('data/vocab_train_{}.npy'.format(count), train_vocab)
+    print("Saved train vocab")
 
     f_test = Features(df=test_df)
     f_test.createFeatures(vocab=train_vocab, test=True)
-    # np.save('data/features_test_{}.npy'.format(count), f_test.features)
+    np.save('data/features_test_{}.npy'.format(count), f_test.features)
+    print("Saved test features")
 
-    # print("Saved test features")
 
-    # train_df['GISTDesc'] = train_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
-    # test_df['GISTDesc'] = test_df['Path'].apply(lambda x: FeatureExtractor(x).GIST())
+    X_GIST = f_train.as_matrix(columns=['GISTDesc'])
+    np.save('data/GIST_descriptors_train_{}.npy'.format(count), x)
+    print("Saved GIST for train")
 
-    # x = train_df.as_matrix(columns=['GISTDesc'])
-    # np.save('data/GISTDesc_train_{}.npy'.format(count), x)
-
-    # print("Saved GIST for train")
-
-    # y = test_df.as_matrix(columns=['GISTDesc'])
-    # np.save('data/GISTDesc_test_{}.npy'.format(count), y)
-
-    # print("Saved GIST for test")
-
-    np.save('data/EdgeCount_train_{}.npy'.format(count), f_train.features)
-
-    print("Saved EdgeCount for train")
-
-    np.save('data/EdgeCount_test_{}.npy'.format(count), f_test.features)
-
-    print("Saved EdgeCount for test")
+    y = f_test.as_matrix(columns=['GISTDesc'])
+    np.save('data/GIST_descriptors_test_{}.npy'.format(count), y)
+    print("Saved GIST for test")
 
     print("Elapsed time: ", time()-start)
 
-if __name__ == '__main__':
-    columns = ['Painting', 'Class', 'Path', 'SIFTDesc', 'Brightness', 'Saturation', 'ColorHist',
-             'GISTDesc', 'LocalMaxima', 'LocalMinima', 'Mean_HSVYBGR']
 
-    generate_files(100)
+
+if __name__ == '__main__':
+    columns = ['Painting', 'Class', 'Path', 'ColorHist','SIFTDesc', 'Brightness', 'Saturation', 
+             'GISTDesc', 'Mean_HSVYBGR']
+
+    genre_count = int(os.getenv('genre_count'))
+    img_count = int(os.getenv('sample_img_count'))
+    # img_count = int(os.getenv('img_count'))
+
+    generate_files(genre_count*img_count)
